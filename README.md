@@ -2,6 +2,11 @@
 
 Host a webapp in electron with an app icon, persistent cookie support, window position management, common menus and keyboard shortcuts
 
+Also see Desktop PWAs
+
+* [Chrome PWA Support](https://medium.com/dailyjs/goodbye-electron-hello-desktop-pwas-f316b8f39882)
+* [https://www.desktop-pwas.com/](https://www.desktop-pwas.com/)
+
 ## Setup an app
 
 1. Clone the repo

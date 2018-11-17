@@ -1,0 +1,57 @@
+{
+  "name": "template",
+  "productName": "template",
+  "description": "template",
+  "keywords": [],
+  "main": "./main.js",
+  "version": "1.0.0",
+  "author": "elink",
+  "scripts": {
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+    "publish": "electron-forge publish",
+    "lint": "echo \"No linting configured\""
+  },
+  "dependencies": {
+    "electron-cookies": "*",
+    "electron-window-state": "^5.0.2"
+  },
+  "devDependencies": {
+    "electron": "3.0.9",
+    "@electron-forge/cli": "6.0.0-beta.22",
+    "@electron-forge/maker-deb": "6.0.0-beta.22",
+    "@electron-forge/maker-rpm": "6.0.0-beta.22",
+    "@electron-forge/maker-squirrel": "6.0.0-beta.22",
+    "@electron-forge/maker-zip": "6.0.0-beta.22"
+  },
+  "config": {
+    "app": {
+      "url": "https://google.com"
+    },
+    "forge": {
+      "packagerConfig": {
+        "icon": "app.icns"
+      },
+      "makers": [
+        {
+          "name": "@electron-forge/maker-squirrel"
+        },
+        {
+          "name": "@electron-forge/maker-zip",
+          "platforms": [
+            "darwin"
+          ]
+        },
+        {
+          "name": "@electron-forge/maker-deb",
+          "config": {}
+        },
+        {
+          "name": "@electron-forge/maker-rpm",
+          "config": {}
+        }
+      ]
+    }
+  }
+}

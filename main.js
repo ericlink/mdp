@@ -8,9 +8,9 @@ const pjson  = require('./package.json');
 let window = null;
 
 app.on('ready', () => {
-  menu.setupMenu();
   cookie.initCookieManager(session.defaultSession);
   createMainWindow();
+  menu.setupMenu(app, window);
   window.loadURL(pjson.config.app.url);
   window.once('ready-to-show', () => {
     window.show();

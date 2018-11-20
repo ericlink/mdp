@@ -31,7 +31,8 @@
     },
     "forge": {
       "packagerConfig": {
-        "icon": "app.icns"
+        "icon": "app.icns",
+        "darwinDarkModeSupport": true
       },
       "makers": [
         {

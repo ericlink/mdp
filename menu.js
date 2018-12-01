@@ -10,7 +10,9 @@ exports.setupMenu = function(app, window) {
       { type: 'separator' },
       { role: 'cut' },
       { role: 'copy' },
-      { role: 'paste' }
+      { role: 'paste' },
+      { role: 'selectAll' }
+
     ]
   },
   {

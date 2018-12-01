@@ -11,8 +11,7 @@ exports.setupMenu = function(app, window) {
       { role: 'cut' },
       { role: 'copy' },
       { role: 'paste' },
-      { role: 'selectAll' }
-
+      { role: 'selectall' }
     ]
   },
   {

@@ -11,11 +11,16 @@ app.on('ready', () => {
   let url = process.argv[1] ? process.argv[1] : pjson.config.app.url;
   cookie.initCookieManager(session.defaultSession);
   createMainWindow();
-  menu.setupMenu(app, window);
-  window.loadURL(url);
+  menu.setupMenu(app);
+
+	window.loadURL(url);
+
+  //window.show();
+
   window.once('ready-to-show', () => {
     window.show();
   });
+
 });
 
 function createMainWindow() {

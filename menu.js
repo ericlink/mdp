@@ -1,6 +1,6 @@
-const { Menu } = require('electron');
+const { BrowserWindow, Menu } = require('electron');
 
-exports.setupMenu = function(app, window) {
+exports.setupMenu = function(app) {
   const template = [
   {
     label: 'Edit',
@@ -28,8 +28,8 @@ exports.setupMenu = function(app, window) {
         label: 'Back',
         accelerator: 'CmdOrCtrl+Left',
         click: () => {
-            if (window.webContents.canGoBack()) {
-              window.webContents.goBack();
+            if (BrowserWindow.getFocusedWindow().webContents.canGoBack()) {
+              BrowserWindow.getFocusedWindow().webContents.goBack();
             }
         }
       },
@@ -37,8 +37,8 @@ exports.setupMenu = function(app, window) {
         label: 'Forward',
         accelerator: 'CmdOrCtrl+Right',
         click: () => {
-            if (window.webContents.canGoForward()) {
-              window.webContents.goForward();
+            if (BrowserWindow.getFocusedWindow().webContents.canGoForward()) {
+              BrowserWindow.getFocusedWindow().webContents.goForward();
             }
         }
       },

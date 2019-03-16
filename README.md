@@ -5,17 +5,11 @@ Markdown preview using marked, highlight.js, mermaid and live reload.
 ## todo
 
 [x] move poc into app (works using dev command line)
-
 [] get working as packaged
-
 [] get working as packaged --detach
-
 [] get working as cmd line
-
 [] get working from file associated in finder
-
 [] get working with *marked* markdown themes
-
 [] fix up js
 
 `./node_modules/.bin/electron main.js ./example.md`

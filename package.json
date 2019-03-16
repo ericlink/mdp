@@ -14,9 +14,15 @@
     "lint": "echo \"No linting configured\""
   },
   "dependencies": {
+    "chokidar": "^2.1.2",
+    "electron": "^4.0.8",
     "electron-cookies": "*",
     "electron-reload": "^1.4.0",
-    "electron-window-state": "^5.0.2"
+    "electron-window-state": "^5.0.2",
+    "highlight.js": "^9.12.0",
+    "marked": "^0.3.12",
+    "mermaid": "^8.0.0",
+    "url": "^0.11.0"
   },
   "devDependencies": {
     "@electron-forge/cli": "6.0.0-beta.22",

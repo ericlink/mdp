@@ -2,6 +2,9 @@
 
 Markdown preview using marked, highlight.js, mermaid and live reload.
 
+
+`./node_modules/.bin/electron main.js ./example.md`
+
 `mdp example.md`
 
 upstream is `git clone https://github.com/ericlink/electron-forge-webapp-template.git`

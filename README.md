@@ -26,4 +26,4 @@ upstream is `git clone https://github.com/ericlink/electron-forge-webapp-templat
 
 `menu.js` &mdash; setup menus and shortcut keys
 
-`renderer.js` &mdash; require `electron-cookies` bacause it has to run in the renderer process
+`renderer.js` &mdash; require `electron-cookies` because it has to run in the renderer process

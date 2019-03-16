@@ -1,7 +1,7 @@
 {
-  "name": "template",
-  "productName": "template",
-  "description": "template",
+  "name": "mdp",
+  "productName": "mdp",
+  "description": "mdp",
   "keywords": [],
   "main": "./main.js",
   "version": "1.0.0",
@@ -28,7 +28,7 @@
   },
   "config": {
     "app": {
-      "url": "https://google.com"
+      "defaultFile": "README.md"
     },
     "forge": {
       "packagerConfig": {

@@ -1,6 +1,6 @@
 # mdp
 
-***m***ark***d***own ***p***review using marked, highlight.js, mermaid and live reload
+**m**ark **d**own **p**review using marked, highlight.js, mermaid and live reload
 
 ## todo
 

@@ -1,6 +1,6 @@
-# **m**ark**d**own**p**review
+# mdp
 
-Markdown preview using marked, highlight.js, mermaid and live reload.
+**m**ark**d**own **p**review using marked, highlight.js, mermaid and live reload
 
 ## todo
 
@@ -18,15 +18,13 @@ Markdown preview using marked, highlight.js, mermaid and live reload.
 
 [] fix up js
 
-`./node_modules/.bin/electron main.js ./example.md`
+## dev
+1. `npm install`
+1. `./node_modules/.bin/electron main.js ./example.md`
 
-`mdp example.md`
+upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-template.git`
 
-upstream is `git clone https://github.com/ericlink/electron-forge-webapp-template.git`
-
-[icon finder](https://www.easyicon.net/language.en/))
-
-## build
+## package
 1. `npm install`
 1. `npm run package`
 1. `mv ./out/App-x64/myApp.app /Applications/`

@@ -9,7 +9,11 @@ const chokidar = require('chokidar');
 
 var mermaidConfig = {
     startOnLoad:false,
-    theme: 'forest',
+    theme: 'neutral',
+    sequenceDiagram:{
+            useMaxWidth:false,
+            htmlLabels:true
+        },
     flowchart:{
             useMaxWidth:false,
             htmlLabels:true

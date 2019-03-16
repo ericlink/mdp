@@ -18,8 +18,8 @@ blockquote {
     padding: 0;
 }
 body {
-    font-family: "Helvetica Neue", Helvetica, "Hiragino Sans GB", Arial, sans-serif;
-    font-size: 13px;
+    font-family: "Roboto", Helvetica, "Hiragino Sans GB", Arial, sans-serif;
+    font-size: 16px;
     line-height: 18px;
     color: #fff;
     background-color: #282a36;
@@ -102,18 +102,11 @@ blockquote p {
     margin-bottom: 0;
     font-style: italic;
 }
-code, pre {
-    font-family: Monaco, Andale Mono, Courier New, monospace;
+code svg {
+	background-color: white;
+	padding: 10px;
 }
-code {
-	color: #ff4a14;
-    padding: 1px 3px;
-    font-size: 12px;
-    -webkit-border-radius: 3px;
-    -moz-border-radius: 3px;
-    border-radius: 3px;
-}
-pre {
+xpre {
     display: block;
     padding: 14px;
     margin: 0 0 18px;
@@ -123,12 +116,6 @@ pre {
     white-space: pre;
     white-space: pre-wrap;
     word-wrap: break-word;
-}
-pre code {
-    background-color: #282a36;
-    color: #ff4a14;
-    font-size: 11px;
-    padding: 0;
 }
 sup {
     font-size: 0.83em;

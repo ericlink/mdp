@@ -1,6 +1,6 @@
 const { app, BrowserWindow, session } = require('electron');
 const windowStateKeeper = require('electron-window-state');
-//const cookie = require('./cookie.js');
+//fails when packaged - const cookie = require('./cookie.js');
 const menu   = require('./menu.js');
 const pjson  = require('./package.json');
 const path = require('path');
@@ -38,7 +38,7 @@ app.on('window-all-closed', () => {
 });
 
 app.on('activate', () => {
-  if (win === null) {
+  if (window === null) {
     createWindow()
   }
 });

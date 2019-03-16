@@ -1,6 +1,6 @@
 # mdp
 
-**m**ark**d**own **p**review using marked, highlight.js, mermaid and live reload
+***m***ark***d***own ***p***review using marked, highlight.js, mermaid and live reload
 
 ## todo
 
@@ -8,7 +8,11 @@
 
 [] get working as packaged
 
+[] keep scroll position on reload
+
 [] get working as packaged --detach
+
+[] github release using electron-forge
 
 [] get working as cmd line
 

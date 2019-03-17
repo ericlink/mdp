@@ -14,10 +14,10 @@ app.on('ready', () => {
   createMainWindow();
   menu.setupMenu(app);
 
-  global.sharedObject = {prop1: process.argv}
+  global.sharedObject = {argv: process.argv}
 
   window.loadURL('file://' + path.join(__dirname, 'view/index.html'));
-	/*
+  /*
   window.loadURL(url.format({
     pathname: path.join(__dirname, 'view/index.html'),
     protocol: 'file:',

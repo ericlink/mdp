@@ -9,10 +9,7 @@ charset = utf-8
 indent_size = 4
 indent_style = space
 
-[*.{js,yml,html,css}]
-indent_size = 2
-
-[{package.json}]
+[*.{js,yml,html,css,json}]
 indent_size = 2
 
 #   vim plugin https://github.com/editorconfig/editorconfig-vim.git

@@ -4,23 +4,25 @@
 
 ## todo
 
-[x] move poc into app (works using dev command line)
-
-[] get working as packaged
-
 [] get working from file associated in finder
 
-[] keep scroll position on reload
+[] get working with *highlight.js* themes
 
-[] get working as packaged --detach
+[] get working with *marked* themes
 
-[] github release using electron-forge
-
-[] get working as cmd line
-
-[] get working with *marked* markdown themes
+[] installer - install command line script
 
 [] fix up js
+
+[x] move poc into app (works using dev command line)
+
+[x] github release using electron-forge
+
+[x] get working as cmd line
+
+[x] get working as packaged
+
+[x] keep scroll position on reload
 
 ## dev
 1. `npm install`
@@ -31,19 +33,5 @@ upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-te
 ## package
 1. `npm install`
 1. `npm run package`
-1. `mv ./out/App-x64/myApp.app /Applications/`
-1. `rm -rf out node_modules`
+1. `npm run make && npm run publish`
 
-## inventory
-
-`app.icns` &mdash; mac icon support
-
-`cookie.js` &mdash; ensure cookies persist by flushing cookie storage
-
-`index.html` &mdash; show versions and load `renderer.js`
-
-`main.js` &mdash; main entry point
-
-`menu.js` &mdash; setup menus and shortcut keys
-
-`renderer.js` &mdash; require `electron-cookies` because it has to run in the renderer process

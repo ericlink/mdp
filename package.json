@@ -5,7 +5,7 @@
   "description": "mdp",
   "keywords": [],
   "main": "./src/main.js",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "author": "elink",
   "scripts": {
     "dev-publish": "npm run package && rm -rf /Applications/mdp.app/ && mv ./out/mdp-darwin-x64/mdp.app /Applications/",

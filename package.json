@@ -3,7 +3,7 @@
   "productName": "mdp",
   "description": "mdp",
   "keywords": [],
-  "main": "./main.js",
+  "main": "./app/main.js",
   "version": "1.0.0",
   "author": "elink",
   "scripts": {
@@ -38,7 +38,7 @@
     },
     "forge": {
       "packagerConfig": {
-        "icon": "app.icns",
+        "icon": "assets/app.icns",
         "darwinDarkModeSupport": true
       },
       "makers": [

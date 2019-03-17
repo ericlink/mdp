@@ -2,11 +2,15 @@ const { app, BrowserWindow, session } = require('electron');
 const windowStateKeeper = require('electron-window-state');
 //fails when packaged - const cookie = require('./cookie.js');
 const menu   = require('./menu.js');
-const pjson  = require('./package.json');
+const pjson  = require('../package.json');
 const path = require('path');
 const url = require('url');
 
 let window = null;
+
+app.on('open-file', function(event, filePath){
+  event.preventDefault();
+});
 
 app.on('ready', () => {
   let url = process.argv[1] ? process.argv[1] : pjson.config.app.url;
@@ -16,7 +20,7 @@ app.on('ready', () => {
 
   global.sharedObject = {argv: process.argv}
 
-  window.loadURL('file://' + path.join(__dirname, 'view/index.html'));
+  window.loadURL('file://' + path.join(__dirname, '../view/index.html'));
   /*
   window.loadURL(url.format({
     pathname: path.join(__dirname, 'view/index.html'),
@@ -54,7 +58,7 @@ function createMainWindow() {
     'y': mainWindowState.y,
     'width': mainWindowState.width,
     'height': mainWindowState.height,
-    webPreferences: { 
+    webPreferences: {
       nodeIntegration: true,
       partition: "persist:main",
       webSecurity: false,

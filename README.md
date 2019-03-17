@@ -4,11 +4,11 @@
 
 ## todo
 
-- [] fix up js
-- [] get working from file associated in finder
-- [] get working with *highlight.js* themes
-- [] get working with *marked* themes
-- [] installer - install command line script
+- [ ] fix up js
+- [ ] get working from file associated in finder
+- [ ] get working with *highlight.js* themes
+- [ ] get working with *marked* themes
+- [ ] installer - install command line script
 - [x] get working as cmd line
 - [x] get working as packaged
 - [x] github release using electron-forge

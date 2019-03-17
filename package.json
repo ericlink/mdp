@@ -7,7 +7,9 @@
   "version": "1.0.0",
   "author": "elink",
   "scripts": {
-    "start": "electron-forge start",
+    "dev": "./node_modules/.bin/electron ./app/main.js ./assets/example.md",
+    "dev-noarg": "./node_modules/.bin/electron ./app/main.js",
+    "start": "electron-forge start ./assets/example.md",
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",

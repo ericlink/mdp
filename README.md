@@ -24,7 +24,7 @@
 
 ## dev
 1. `npm install`
-1. `./node_modules/.bin/electron main.js ./example.md`
+1. `./node_modules/.bin/electron ./app/main.js ./assets/example.md`
 
 upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-template.git`
 

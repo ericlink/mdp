@@ -39,7 +39,7 @@ const readFile = (file) => {
 
 // 2nd arg for dev, first arg for normal, README.md as default
 const argv = remote.getGlobal('sharedObject').argv;
-const path = argv[1] === 'main.js' ? argv[2] : argv[1];
+const path = argv[1] === './app/main.js' ? argv[2] : argv[1];
 const file = path || 'README.md';
 readFile(file);
 

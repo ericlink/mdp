@@ -36,10 +36,12 @@ const readFile = (file) => {
     const out = document.querySelector('.md').innerHTML;
 	fs.writeFile('/tmp/output.html', out, function(){});
 }
-const arguments = remote.getGlobal('sharedObject').prop1;
-console.log(arguments[2]);
-const path = arguments[2];
-readFile(path);
+
+// 2nd arg for dev, first arg for normal, README.md as default
+const argv = remote.getGlobal('sharedObject').argv;
+const path = argv[1] === 'main.js' ? argv[2] : argv[1];
+const file = path || 'README.md';
+readFile(file);
 
 const watcher = chokidar.watch(path, { ignored: /[\/\\]\./, persistent: true });
 

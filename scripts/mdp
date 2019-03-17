@@ -1,2 +1,2 @@
 #!/bin/bash
-/Applications/mdp.app/Contents/MacOS/mdp - $1 &
+/Applications/mdp.app/Contents/MacOS/mdp $1 &

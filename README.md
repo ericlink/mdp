@@ -8,6 +8,8 @@
 
 [] get working as packaged
 
+[] get working from file associated in finder
+
 [] keep scroll position on reload
 
 [] get working as packaged --detach
@@ -15,8 +17,6 @@
 [] github release using electron-forge
 
 [] get working as cmd line
-
-[] get working from file associated in finder
 
 [] get working with *marked* markdown themes
 

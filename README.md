@@ -9,6 +9,7 @@
 - [ ] get working with *highlight.js* themes
 - [ ] get working with *marked* themes
 - [ ] installer - install command line script
+- [ ] mac code signing
 - [x] get working as cmd line
 - [x] get working as packaged
 - [x] github release using electron-forge

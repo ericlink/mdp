@@ -1,9 +1,8 @@
 # mdp
-
 **m**ark **d**own **p**review using marked, highlight.js, mermaid and live reload
 
 ## todo
-
+- [ ] export menu (html, open in browser)
 - [ ] fix up js
 - [ ] get working from file associated in finder
 - [ ] get working with *highlight.js* themes

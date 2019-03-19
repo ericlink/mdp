@@ -3,16 +3,16 @@
 
 ## todo
 - [ ] export menu (html, open in browser)
-- [ ] close window key
 - [ ] fix up js
+- [ ] zoom by window?
+- [ ] installer - install command line script
 - [ ] load modules more efficiently
 - [ ] webpack
-- [ ] window menu
-- [ ] zoom by window
 - [ ] get working with *highlight.js* themes
 - [ ] get working with *marked* themes
-- [ ] installer - install command line script
 - [ ] mac code signing
+- [x] window menu
+- [x] close window key
 - [x] get working from file associated in finder
 - [x] get working opening multiple from command line
 - [x] get working as cmd line

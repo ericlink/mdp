@@ -5,21 +5,14 @@ exports.setupMenu = function(app) {
     {
       label: 'Edit',
       submenu: [
-        { role: 'undo' },
-        { role: 'redo' },
-        { type: 'separator' },
-        { role: 'cut' },
         { role: 'copy' },
-        { role: 'paste' },
         { role: 'selectall' }
       ]
     },
+        { role: 'windowMenu' },
     {
       label: 'Actions',
       submenu: [
-        { role: 'reload' },
-        { role: 'forcereload' },
-        { type: 'separator' },
         { role: 'zoomin' },
         { role: 'zoomout' },
         { role: 'resetzoom' },

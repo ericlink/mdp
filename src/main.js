@@ -71,6 +71,22 @@ if (!app.requestSingleInstanceLock()) {
 
 
 /** poc questions holding zone **/
+/*
+ mdp ./audio.md
+ need to expand file args to absolute paths
+[2019-03-23 08:45:29.633] [info] [ '/Applications/mdp.app/Contents/MacOS/mdp', './audio.md' ]
+[2019-03-23 08:45:30.285] [info] readFile ./audio.md
+[2019-03-23 08:45:30.297] [error] readFile Error: ENOENT: no such file or directory, open './audio.md'
+[2019-03-23 08:45:30.298] [error] readFile no data
+*/
+
+/*
+- check for if exists in readFile, else close window
+first launch accepting open anyway security
+[2019-03-23 08:42:31.939] [info] readFile -psn_0_3715979
+[2019-03-23 08:42:31.952] [error] readFile Error: ENOENT: no such file or directory, open '-psn_0_3715979'
+[2019-03-23 08:42:31.953] [error] readFile no data
+*/
 
 /*
 //fixme export - works but missing styles, inject those into doc?

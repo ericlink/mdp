@@ -23,9 +23,15 @@
 
 ## dev
 1. `npm install`
-1. `./node_modules/.bin/electron ./app/main.js ./assets/example.md`
+1. `npm run dev`
+1. `npm run dev &` - run in background to test open-file with subsequent open
+1. `npm run dev-noarg` - tests launch ./README.md by default
+1. `./node_modules/.bin/electron ./src/main.js ./README.md`
+1. `./node_modules/.bin/electron ./src/main.js` - launch readme by default
 1. `npm run dev-publish`
-1. logs to `~/Library/Logs/mdp/log.log`
+1. open from finder once packaged
+1. open from mdp shell script once packaged
+1. `tail -f ~/Library/Logs/mdp/log.log`
 
 upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-template.git`
 

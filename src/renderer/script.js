@@ -30,10 +30,18 @@ const readFile = (file) => {
     // mermaid
     Array.from(document.querySelectorAll('.lang-mermaid')).forEach(
       block => mermaid.init(undefined, block))
+
+    /*
+    //export - works but missing styles, inject those into doc?
+    //fs.writeFile('/tmp/mdp.html', new XMLSerializer().serializeToString(document), function(){});
+    fs.writeFile('/tmp/mdp.html', document.documentElement.outerHTML, function(){
+      const shell = require('electron').shell;
+      const path = require('path');
+      //shell.openItem(path.join(__dirname, 'test.docx'));
+      shell.openItem('/tmp/mdp.html');
+    });
+    */
   })
-  //
-  const htmlOutput = document.querySelector('.md').innerHTML;
-  fs.writeFile('/tmp/mdp.html', htmlOutput, function(){});
 }
 
 // 2nd arg for dev, first arg for normal, README.md as default

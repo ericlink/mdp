@@ -3,6 +3,8 @@
 
 [mdp releases](https://github.com/ericlink/mdp/releases)
 
+to use from the command line, put the `mdp` script in the `package` directory in your path.
+
 ## dev
 1. `npm install`
 1. `npm run dev`
@@ -27,7 +29,6 @@ upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-te
 
 ### usability
 - [ ] export menu (html, open in browser)
-- [ ] expand cmd args to absolute path
 - [ ] open links in os browser
 - [ ] zoom by window?
 
@@ -46,6 +47,7 @@ upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-te
 - [ ] mac code signing
 
 ## done
+- [x] expand cmd args to absolute path
 - [x] fix up js
 - [x] window menu
 - [x] close window key

@@ -6,20 +6,20 @@ const url = require('url');
 const windowStateKeeper = require('electron-window-state');
 const menu   = require('./menu.js');
 
-// fixme - may need to push to array so not collected after multiple win?
-let window = null;
-
 const processArgs = (argv) => {
+  log.info(argv);
   const lastArg =  argv[argv.length-1];
-  if (argv && lastArg !== './src/main.js') {
+  if (argv && argv.length > 1 && lastArg !== './src/main.js') {
     global.file = {name: lastArg};
   }
 }
 
 const createMainWindow = () => {
+  if (!global.file) return;
+
   let mainWindowState = windowStateKeeper({ defaultWidth: 1000, defaultHeight: 800 });
 
-  window = new BrowserWindow({
+  const window = new BrowserWindow({
     show: false,
     title: 'mdp',
     'x': mainWindowState.x,
@@ -35,16 +35,12 @@ const createMainWindow = () => {
   });
 
   mainWindowState.manage(window);
-
   window.loadURL('file://' + path.join(__dirname, './renderer/index.html'));
-  /* fixme url and slashes window.loadURL(url.format({ pathname: path.join(__dirname, 'view/index.html'), protocol: 'file:', slashes: true })); */
-
   window.once('ready-to-show', () => { window.show(); });
 }
 
 app.on('open-file', (event, filePath) => {
   event.preventDefault();
-  log.info('open-file',event,filePath);
   global.file = {name: filePath};
   createMainWindow();
 });
@@ -55,10 +51,6 @@ if (!app.requestSingleInstanceLock()) {
 } else {
   // register these only on first instance that got the lock
   app.on('second-instance', (event, commandLine, workingDirectory) => {
-    if (window) {
-      if (window.isMinimized()) window.restore();
-      window.focus();
-    }
     processArgs(commandLine);
     createMainWindow();
   });
@@ -78,7 +70,7 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 
-/** poc holding zone **/
+/** poc questions holding zone **/
 
 /*
 //fixme export - works but missing styles, inject those into doc?
@@ -92,3 +84,16 @@ shell.openItem('/tmp/mdp.html');
 */
 
 /* fixme need activate? app.on('activate', () => { if (window === null) { createWindow() } }); */
+
+/* fixme window is destroyed, keep list or?
+in app.on('second-instance', (event, commandLine, workingDirectory)
+if (window) {
+  if (window.isMinimized()) window.restore();
+  window.focus();
+}
+*/
+//
+// fixme - may need to push to array so not collected after multiple win?
+// let window = null;
+
+  /* fixme url and slashes window.loadURL(url.format({ pathname: path.join(__dirname, 'view/index.html'), protocol: 'file:', slashes: true })); */

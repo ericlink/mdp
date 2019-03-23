@@ -7,16 +7,20 @@ const mermaid = require('mermaid')
 const remote = require('electron').remote
 
 const readFile = (file) => {
-  log.info('readFile',file);
+  log.info('readFile', file);
   fs.readFile(file, (err, data) => {
+    if (err) log.error('readFile', err);
+    if (!data || data.length == 0) log.error('readFile', 'no data');
     // marked
     document.querySelector('.md').innerHTML = marked(data.toString());
     // highlight.js
     Array.from(document.querySelectorAll('pre code')).forEach(
-      block => hljs.highlightBlock(block))
+      block => hljs.highlightBlock(block)
+    );
     // mermaid
     Array.from(document.querySelectorAll('.lang-mermaid')).forEach(
-      block => mermaid.init(undefined, block))
+      block => mermaid.init(undefined, block)
+    );
   })
 }
 
@@ -37,17 +41,16 @@ const initMermaid = () => {
 }
 
 const getFileName = () => {
-  log.info('remote.getGlobal.file.name', remote.getGlobal('file').name);
-  const file = remote.getGlobal('file').name || 'README.md';
-  remote.getGlobal('file').name = null;
-  return file;
+  if (remote.getGlobal('file') && remote.getGlobal('file').name) {
+    const file = remote.getGlobal('file').name;
+    remote.getGlobal('file').name = null;
+    return file;
+  } else {
+    remote.getCurrentWindow().close();
+  }
 }
 
-const main = () => {
-  const file = getFileName();
-  initMermaid();
-  readFile(file);
-
+const watchFile = (file) => {
   const watcher = chokidar.watch(file, { ignored: /[\/\\]\./, persistent: true });
 
   watcher.on('change', (file) => {
@@ -55,5 +58,8 @@ const main = () => {
   })
 }
 
-main();
+const file = getFileName();
+initMermaid();
+readFile(file);
+watchFile(file);
 

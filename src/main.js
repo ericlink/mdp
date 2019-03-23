@@ -1,96 +1,22 @@
 const { app, BrowserWindow, session } = require('electron');
-const windowStateKeeper = require('electron-window-state');
-const menu   = require('./menu.js');
+const log = require('electron-log');
 const path = require('path');
 const update = require('update-electron-app');
 const url = require('url');
-const log = require('electron-log');
+const windowStateKeeper = require('electron-window-state');
+const menu   = require('./menu.js');
 
+// fixme - may need to push to array so not collected after multiple win?
 let window = null;
 
-app.on('open-file', function(event, filePath){
-  event.preventDefault();
-  log.info('open-file',event,filePath);
-  global.openFile = {filePath: filePath};
-
-  //////////
-  createMainWindow();
-  window.loadURL('file://' + path.join(__dirname, './renderer/index.html'));
-  window.once('ready-to-show', () => { window.show(); });
-  //////////
-});
-
-
-const gotTheLock = app.requestSingleInstanceLock()
-
-if (!gotTheLock) {
-  app.quit()
-} else {
-  app.on('second-instance', (event, commandLine, workingDirectory) => {
-    if (window) {
-      if (window.isMinimized()) window.restore();
-      window.focus();
-    }
-    log.info('second-instance', event, commandLine, workingDirectory);
-    // create another window with the new doc
-    createMainWindow();
-    menu.setupMenu(app);
-
-    global.sharedObject = {commandLine: commandLine};
-    window.loadURL('file://' + path.join(__dirname, './renderer/index.html'));
-    /*
-      window.loadURL(url.format({
-        pathname: path.join(__dirname, 'view/index.html'),
-        protocol: 'file:',
-        slashes: true
-      }));
-      */
-
-    window.once('ready-to-show', () => {
-      window.show();
-    });
-
-
-  });
-
-  app.on('ready', () => {
-    createMainWindow();
-    menu.setupMenu(app);
-
-    global.sharedObject = {argv: process.argv}
-    window.loadURL('file://' + path.join(__dirname, './renderer/index.html'));
-    /*
-      window.loadURL(url.format({
-        pathname: path.join(__dirname, 'view/index.html'),
-        protocol: 'file:',
-        slashes: true
-      }));
-      */
-
-    window.once('ready-to-show', () => {
-      window.show();
-    });
-
-  });
-
-  app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') {
-      app.quit()
-    }
-  });
-
-  /*
-app.on('activate', () => {
-  if (window === null) {
-    createWindow()
+const processArgs = (argv) => {
+  const lastArg =  argv[argv.length-1];
+  if (argv && lastArg !== './src/main.js') {
+    global.file = {name: lastArg};
   }
-});
-*/
-
 }
 
-
-function createMainWindow() {
+const createMainWindow = () => {
   let mainWindowState = windowStateKeeper({ defaultWidth: 1000, defaultHeight: 800 });
 
   window = new BrowserWindow({
@@ -109,4 +35,60 @@ function createMainWindow() {
   });
 
   mainWindowState.manage(window);
+
+  window.loadURL('file://' + path.join(__dirname, './renderer/index.html'));
+  /* fixme url and slashes window.loadURL(url.format({ pathname: path.join(__dirname, 'view/index.html'), protocol: 'file:', slashes: true })); */
+
+  window.once('ready-to-show', () => { window.show(); });
 }
+
+app.on('open-file', (event, filePath) => {
+  event.preventDefault();
+  log.info('open-file',event,filePath);
+  global.file = {name: filePath};
+  createMainWindow();
+});
+
+if (!app.requestSingleInstanceLock()) {
+  // quit and let second-instance handler take it
+  app.quit()
+} else {
+  // register these only on first instance that got the lock
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    if (window) {
+      if (window.isMinimized()) window.restore();
+      window.focus();
+    }
+    processArgs(commandLine);
+    createMainWindow();
+  });
+
+  app.on('ready', () => {
+    menu.setupMenu(app);
+    processArgs(process.argv);
+    createMainWindow();
+  });
+
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') {
+      app.quit()
+    }
+  });
+
+}
+
+
+/** poc holding zone **/
+
+/*
+//fixme export - works but missing styles, inject those into doc?
+//fs.writeFile('/tmp/mdp.html', new XMLSerializer().serializeToString(document), function(){});
+fs.writeFile('/tmp/mdp.html', document.documentElement.outerHTML, function(){
+const shell = require('electron').shell;
+const path = require('path');
+//shell.openItem(path.join(__dirname, 'test.docx'));
+shell.openItem('/tmp/mdp.html');
+});
+*/
+
+/* fixme need activate? app.on('activate', () => { if (window === null) { createWindow() } }); */

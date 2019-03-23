@@ -5,7 +5,7 @@
   "description": "mdp",
   "keywords": ["markdown","electron","livereload","live-reload"],
   "main": "./src/main.js",
-  "version": "0.0.5",
+  "version": "0.0.1",
   "author": "elink",
   "scripts": {
     "dev-publish": "npm run package && rm -rf /Applications/mdp.app/ && mv ./out/mdp-darwin-x64/mdp.app /Applications/",

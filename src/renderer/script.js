@@ -5,6 +5,7 @@ const log = require('electron-log');
 const marked = require('marked')
 const mermaid = require('mermaid')
 const remote = require('electron').remote
+const shell = require('electron').shell;
 
 const readFile = (file) => {
   log.info('readFile', file);
@@ -21,6 +22,13 @@ const readFile = (file) => {
     Array.from(document.querySelectorAll('.lang-mermaid')).forEach(
       block => mermaid.init(undefined, block)
     );
+    // open all links in external browser
+    document.addEventListener('click', function (event) {
+      if (event.target.tagName === 'A' && event.target.href.startsWith('http')) {
+        event.preventDefault();
+        shell.openExternal(event.target.href);
+      }
+    })
   })
 }
 

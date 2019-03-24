@@ -18,6 +18,11 @@ function handler(data,err) {
 	if (err) console.log(err);
 }
 ```
+## open links in default browser
+
+[https://github.com/ericlink/mdp](https://github.com/ericlink/mdp)
+
+[http://github.com/ericlink/mdp](http://github.com/ericlink/mdp)
 
 ## mermaid
 

@@ -29,7 +29,6 @@ upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-te
 
 ### usability
 - [ ] export menu (html, open in browser)
-- [ ] open links in os browser
 - [ ] zoom by window?
 
 ### tech
@@ -47,6 +46,7 @@ upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-te
 - [ ] mac code signing
 
 ## done
+- [x] open links in os browser
 - [x] expand cmd args to absolute path
 - [x] fix up js
 - [x] window menu

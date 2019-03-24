@@ -9,10 +9,23 @@ exports.setupMenu = function(app) {
         { role: 'selectall' }
       ]
     },
-        { role: 'windowMenu' },
+    { role: 'windowMenu' },
     {
       label: 'Actions',
       submenu: [
+        {
+          label: 'Open as HTML',
+          accelerator: 'CmdOrCtrl+k',
+          click: () => {
+            BrowserWindow
+              .getFocusedWindow()
+              .webContents
+              .savePage('/tmp/mdp.html', 'HTMLComplete', (error) => {
+                require('electron').shell.openItem('/tmp/mdp.html');
+              });
+          }
+        },
+        { type: 'separator'},
         { role: 'zoomin' },
         { role: 'zoomout' },
         { role: 'resetzoom' },
@@ -69,15 +82,6 @@ exports.setupMenu = function(app) {
       }
     );
 
-    /* Window menu
-    template[3].submenu = [
-      {role: 'close'},
-      {role: 'minimize'},
-      {role: 'zoom'},
-      {type: 'separator'},
-      {role: 'front'}
-    ];
-    */
   }
 
   const menu = Menu.buildFromTemplate(template);

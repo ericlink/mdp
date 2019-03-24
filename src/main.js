@@ -7,7 +7,7 @@ const windowStateKeeper = require('electron-window-state');
 const menu   = require('./menu.js');
 
 const processArgs = (argv) => {
-  log.info(argv);
+  //log.info(argv);
   const lastArg =  argv[argv.length-1];
   if (argv && argv.length > 1 && lastArg !== './src/main.js') {
     global.file = {name: lastArg};
@@ -89,14 +89,6 @@ first launch accepting open anyway security
 */
 
 /*
-//fixme export - works but missing styles, inject those into doc?
-//fs.writeFile('/tmp/mdp.html', new XMLSerializer().serializeToString(document), function(){});
-fs.writeFile('/tmp/mdp.html', document.documentElement.outerHTML, function(){
-const shell = require('electron').shell;
-const path = require('path');
-//shell.openItem(path.join(__dirname, 'test.docx'));
-shell.openItem('/tmp/mdp.html');
-});
 */
 
 /* fixme need activate? app.on('activate', () => { if (window === null) { createWindow() } }); */

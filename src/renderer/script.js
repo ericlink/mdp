@@ -8,7 +8,7 @@ const remote = require('electron').remote
 const shell = require('electron').shell;
 
 const readFile = (file) => {
-  log.info('readFile', file);
+  //log.info('readFile', file);
   fs.readFile(file, (err, data) => {
     if (err) log.error('readFile', err);
     if (!data || data.length == 0) log.error('readFile', 'no data');
@@ -22,13 +22,6 @@ const readFile = (file) => {
     Array.from(document.querySelectorAll('.lang-mermaid')).forEach(
       block => mermaid.init(undefined, block)
     );
-    // open all links in external browser
-    document.addEventListener('click', function (event) {
-      if (event.target.tagName === 'A' && event.target.href.startsWith('http')) {
-        event.preventDefault();
-        shell.openExternal(event.target.href);
-      }
-    })
   })
 }
 
@@ -66,6 +59,13 @@ const watchFile = (file) => {
   })
 }
 
+// open all links in external browser
+document.addEventListener('click', function (event) {
+  if (event.target.tagName === 'A' && event.target.href.startsWith('http')) {
+    event.preventDefault();
+    shell.openExternal(event.target.href);
+  }
+})
 const file = getFileName();
 initMermaid();
 readFile(file);

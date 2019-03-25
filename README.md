@@ -31,6 +31,7 @@ upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-te
 - [ ] zoom by window?
 
 ### tech
+- [ ] auto updater using git releases
 - [ ] get electron-forge start working (not passing arg; detect mode and default arg to readme?)
 - [ ] installer - install command line script
 - [ ] load modules more efficiently?
@@ -45,6 +46,7 @@ upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-te
 - [ ] mac code signing
 
 ## done
+- [x] open url only add listener once, not every reload
 - [x] export menu (html, open in browser)
 - [x] open links in os browser
 - [x] expand cmd args to absolute path

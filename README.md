@@ -28,7 +28,6 @@ upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-te
 ## todo
 
 ### usability
-- [ ] cmd+e to edit current markdown in system editor
 - [ ] zoom by window?
 
 ### tech
@@ -48,6 +47,7 @@ upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-te
 - [ ] mac code signing
 
 ## done
+- [x] cmd+e to edit current markdown in system editor
 - [x] open url only add listener once, not every reload
 - [x] export menu (html, open in browser)
 - [x] open links in os browser

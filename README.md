@@ -28,6 +28,7 @@ upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-te
 ## todo
 
 ### usability
+- [ ] cmd+e to edit current markdown in system editor
 - [ ] zoom by window?
 
 ### tech

@@ -8,6 +8,9 @@ const mermaid = require('mermaid');
 const remote = require('electron').remote;
 const shell = require('electron').shell;
 
+log.catchErrors({});
+//log.transports.file.clear();
+
 const readFile = (file) => {
   //log.info('readFile', file);
   fs.readFile(file, (err, data) => {
@@ -60,7 +63,7 @@ const watchFile = (file) => {
   });
 }
 
-
+// edit current markdown file
 electron.ipcRenderer.on('edit-file', (event, arg) => {
   var child = require('child_process').execFile;
   var executablePath = "/Users/elink/OneDrive/bin/mvim"; // needs full path to work from finder open etc.

@@ -6,6 +6,9 @@ const url = require('url');
 const windowStateKeeper = require('electron-window-state');
 const menu   = require('./menu.js');
 
+log.catchErrors({});
+//log.transports.file.clear();
+
 const processArgs = (argv) => {
   //log.info(argv);
   const lastArg =  argv[argv.length-1];

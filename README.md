@@ -5,6 +5,14 @@
 
 to use from the command line, put the `mdp` script in the `package` directory in your path.
 
+## logs
+on Linux - `~/.config/<app name>/log.log`
+
+on macOS - `~/Library/Logs/<app name>/log.log`
+
+on Windows - `%USERPROFILE%\AppData\Roaming\<app name>\log.log`
+
+
 ## dev
 1. `npm install`
 1. `npm run dev`

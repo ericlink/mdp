@@ -3,9 +3,14 @@
   "repository": "https://github.com/ericlink/mdp",
   "productName": "mdp",
   "description": "mdp",
-  "keywords": ["markdown","electron","livereload","live-reload"],
+  "keywords": [
+    "markdown",
+    "electron",
+    "livereload",
+    "live-reload"
+  ],
   "main": "./src/main.js",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "author": "elink",
   "scripts": {
     "dev-publish": "npm run package && rm -rf /Applications/mdp.app/ && mv ./out/mdp-darwin-x64/mdp.app /Applications/",
@@ -66,22 +71,22 @@
           "name": "@electron-forge/maker-rpm",
           "config": {}
         }
+      ],
+      "publishers": [
+        {
+          "name": "@electron-forge/publisher-github",
+          "platforms": [
+            "darwin"
           ],
-          "publishers": [
-            {
-              "name": "@electron-forge/publisher-github",
-              "platforms": [
-                "darwin"
-              ],
-              "config": {
-                "repository": {
-                  "owner": "ericlink",
-                  "name": "mdp"
-                },
-                "prerelease": true
-              }
-            }
-                  ]
+          "config": {
+            "repository": {
+              "owner": "ericlink",
+              "name": "mdp"
+            },
+            "prerelease": true
+          }
+        }
+      ]
     }
   }
 }

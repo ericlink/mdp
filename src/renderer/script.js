@@ -1,10 +1,11 @@
 const chokidar = require('chokidar');
-const fs = require('fs')
-const hljs = require('highlight.js')
+const electron = require('electron');
+const fs = require('fs');
+const hljs = require('highlight.js');
 const log = require('electron-log');
-const marked = require('marked')
-const mermaid = require('mermaid')
-const remote = require('electron').remote
+const marked = require('marked');
+const mermaid = require('mermaid');
+const remote = require('electron').remote;
 const shell = require('electron').shell;
 
 const readFile = (file) => {
@@ -56,8 +57,18 @@ const watchFile = (file) => {
 
   watcher.on('change', (file) => {
     readFile(file);
-  })
+  });
 }
+
+
+electron.ipcRenderer.on('edit-file', (event, arg) => {
+  var child = require('child_process').execFile;
+  var executablePath = "mvim";
+  var parameters = [file];
+  child(executablePath, parameters, function(err, data) {
+    if (err) log.error(err);
+  });
+});
 
 // open all links in external browser
 document.addEventListener('click', function (event) {
@@ -66,6 +77,7 @@ document.addEventListener('click', function (event) {
     shell.openExternal(event.target.href);
   }
 })
+
 const file = getFileName();
 initMermaid();
 readFile(file);

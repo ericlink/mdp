@@ -39,6 +39,7 @@ upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-te
 - [ ] webpack
 
 ### nice to have
+- [ ] preferences to set editor, e.g.  var executablePath = "mvim";
 - [ ] get working with *highlight.js* themes
 - [ ] get working with *marked* themes
 

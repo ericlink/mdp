@@ -14,6 +14,16 @@ exports.setupMenu = function(app) {
       label: 'Actions',
       submenu: [
         {
+          label: 'Edit Markdown',
+          accelerator: 'CmdOrCtrl+e',
+          click: () => {
+            BrowserWindow
+              .getFocusedWindow()
+              .webContents
+              .send('edit-file', 'edit the current markdown file');
+          }
+        },
+        {
           label: 'Open as HTML',
           accelerator: 'CmdOrCtrl+k',
           click: () => {

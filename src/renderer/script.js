@@ -63,7 +63,7 @@ const watchFile = (file) => {
 
 electron.ipcRenderer.on('edit-file', (event, arg) => {
   var child = require('child_process').execFile;
-  var executablePath = "mvim";
+  var executablePath = "/Users/elink/OneDrive/bin/mvim"; // needs full path to work from finder open etc.
   var parameters = [file];
   child(executablePath, parameters, function(err, data) {
     if (err) log.error(err);

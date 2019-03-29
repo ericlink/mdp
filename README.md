@@ -1,5 +1,5 @@
 # mdp
-**m**ark **d**own **p**review using marked, highlight.js, mermaid and live reload
+**m**ark **d**own **p**review using marked, highlight.js, mermaid, node-emoji and live reload
 
 [mdp releases](https://github.com/ericlink/mdp/releases)
 
@@ -55,6 +55,7 @@ upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-te
 - [ ] mac code signing
 
 ## done
+- [x] emoji support
 - [x] cmd+e to edit current markdown in system editor
 - [x] open url only add listener once, not every reload
 - [x] export menu (html, open in browser)

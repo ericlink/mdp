@@ -18,6 +18,8 @@ function handler(data,err) {
 	if (err) console.log(err);
 }
 ```
+## emoji
+:+1: :coffee: :pizza: :beer:
 ## open links in default browser
 
 [https://github.com/ericlink/mdp](https://github.com/ericlink/mdp)

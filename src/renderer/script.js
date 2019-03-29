@@ -1,5 +1,6 @@
 const chokidar = require('chokidar');
 const electron = require('electron');
+const emoji = require('node-emoji');
 const fs = require('fs');
 const hljs = require('highlight.js');
 const log = require('electron-log');
@@ -16,8 +17,10 @@ const readFile = (file) => {
   fs.readFile(file, (err, data) => {
     if (err) log.error('readFile', err);
     if (!data || data.length == 0) log.error('readFile', 'no data');
+    // emojify
+    const emojified = emoji.emojify(data.toString());
     // marked
-    document.querySelector('.md').innerHTML = marked(data.toString());
+    document.querySelector('.md').innerHTML = marked(emojified);
     // highlight.js
     Array.from(document.querySelectorAll('pre code')).forEach(
       block => hljs.highlightBlock(block)

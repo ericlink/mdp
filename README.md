@@ -26,6 +26,7 @@ upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-te
 ## todo
 
 ### features
+- [ ] fixup markdown inline images to use base path of .md file they are in
 - [ ] keep scroll position on reload
 - [ ] autosave sometimes doesn't refresh (file watcher issue?)
 - [ ] vim keymappings

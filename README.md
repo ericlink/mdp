@@ -56,9 +56,12 @@ upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-te
 ## todo
 
 ### usability
+- [ ] keep scroll position on reload
 - [ ] zoom by window?
+- [ ] vim keymappings
 
 ### tech
+- [ ] upgrade packages
 - [ ] get electron-forge start working (not passing arg; detect mode and default arg to readme?)
 - [ ] load modules more efficiently?
 - [ ] webpack?

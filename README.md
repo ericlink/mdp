@@ -28,10 +28,11 @@ upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-te
 ### features
 - [ ] fixup markdown inline images to use base path of .md file they are in
 - [ ] fixup windows paths (fgantt fork)
+- [ ] preferences to set editor, e.g.  var executablePath = "mvim";
+- [ ] issues and site linked in about
 - [ ] keep scroll position on reload
 - [ ] autosave sometimes doesn't refresh (file watcher issue?)
 - [ ] vim keymappings
-- [ ] preferences to set editor, e.g.  var executablePath = "mvim";
 - [ ] get working with *highlight.js* themes
 - [ ] get working with *marked* themes
 - [ ] zoom by window?

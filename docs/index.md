@@ -4,6 +4,10 @@
 
 [mdp releases](https://github.com/ericlink/mdp/releases)
 
+![markdown.png](markdown.png)
+
+![mermaid.png](mermaid.png)
+
 ## features
 
 ### highlight.js

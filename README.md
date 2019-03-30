@@ -1,9 +1,29 @@
 # mdp
 **m**ark **d**own **p**review using marked, highlight.js, mermaid, node-emoji and live reload
+- [mdp releases](https://github.com/ericlink/mdp/releases)
+- for command line on macOS - put the `mdp.app/Contents/Resources/app/package/mdp` script in your path
 
-[mdp releases](https://github.com/ericlink/mdp/releases)
+## features
 
-to use from the command line, put the `mdp` script in the `package` directory in your path.
+### example
+[example.md](https://github.com/ericlink/mdp/blob/master/assets/example.md)
+
+### marked markdown parsing
+[https://marked.js.org/](https://marked.js.org/)
+
+[https://github.com/markedjs/marked](https://github.com/markedjs/marked)
+
+### highlight.js syntax highlighting
+[https://highlightjs.org/](https://highlightjs.org/)
+
+### mermaid diagrams
+[https://mermaidjs.github.io/](https://mermaidjs.github.io/)
+
+### node-emoji
+[https://github.com/omnidan/node-emoji](https://github.com/omnidan/node-emoji)
+
+[supported emoji](https://raw.githubusercontent.com/omnidan/node-emoji/master/lib/emoji.json)
+
 
 ## logs
 on Linux - `~/.config/<app name>/log.log`
@@ -39,11 +59,9 @@ upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-te
 - [ ] zoom by window?
 
 ### tech
-- [ ] auto updater using git releases
 - [ ] get electron-forge start working (not passing arg; detect mode and default arg to readme?)
-- [ ] installer - install command line script
 - [ ] load modules more efficiently?
-- [ ] webpack
+- [ ] webpack?
 
 ### nice to have
 - [ ] preferences to set editor, e.g.  var executablePath = "mvim";
@@ -51,8 +69,8 @@ upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-te
 - [ ] get working with *marked* themes
 
 ### package and install
-- [ ] installer - install command line script
-- [ ] mac code signing
+- [ ] installer - install command line script into /usr/local/bin
+- [ ] sign app to enable auto updater using git releases
 
 ## done
 - [x] emoji support

@@ -1,6 +1,8 @@
 # mdp
+
 **m**ark **d**own **p**review using marked, highlight.js, mermaid, node-emoji and live reload
-- [mdp releases](https://github.com/ericlink/mdp/releases)
+
+[mdp releases](https://github.com/ericlink/mdp/releases)
 
 ## features
 

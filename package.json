@@ -10,7 +10,7 @@
     "live-reload"
   ],
   "main": "./src/main.js",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "author": "elink",
   "scripts": {
     "dev-publish": "npm run package && rm -rf /Applications/mdp.app/ && mv ./out/mdp-darwin-x64/mdp.app /Applications/",

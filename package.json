@@ -15,6 +15,7 @@
   "scripts": {
     "dev-publish": "npm run package && rm -rf /Applications/mdp.app/ && mv ./out/mdp-darwin-x64/mdp.app /Applications/",
     "dev": "./node_modules/.bin/electron ./src/main.js ./assets/example.md",
+    "log": "tail -f ~/Library/Logs/mdp/log.log",
     "dev-noarg": "./node_modules/.bin/electron ./src/main.js",
     "dev-readme": "./node_modules/.bin/electron ./src/main.js ./README.md",
     "start": "electron-forge start ./assets/example.md",
@@ -29,12 +30,14 @@
     "electron-cookies": "*",
     "electron-log": "^3.0.1",
     "electron-reload": "^1.4.0",
+    "electron-settings": "^3.2.0",
     "electron-window-state": "^5.0.2",
     "highlight.js": "^9.12.0",
     "hoek": "^6.1.2",
     "marked": "^0.3.12",
     "mermaid": "^8.0.0",
     "node-emoji": "^1.10.0",
+    "tmp": "^0.1.0",
     "update-electron-app": "^1.3.0",
     "url": "^0.11.0"
   },
@@ -63,8 +66,7 @@
           "platforms": [
             "darwin"
           ],
-          "config": {
-          }
+          "config": {}
         },
         {
           "name": "@electron-forge/maker-deb",
@@ -86,7 +88,7 @@
               "owner": "ericlink",
               "name": "mdp"
             },
-            "prerelease": true
+            "prerelease": false
           }
         }
       ]

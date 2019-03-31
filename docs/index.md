@@ -22,6 +22,8 @@ syntax highlighting [https://highlightjs.org/](https://highlightjs.org/)
 [supported emoji](https://raw.githubusercontent.com/omnidan/node-emoji/master/lib/emoji.json)
 
 ### marked markdown parsing
+github flavored markdown
+
 [https://marked.js.org/](https://marked.js.org/)
 
 [https://github.com/markedjs/marked](https://github.com/markedjs/marked)

@@ -26,9 +26,7 @@ upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-te
 ## todo
 
 ### features
-- [ ] fixup markdown inline images to use base path of .md file they are in
-- [ ] fixup windows paths (fgantt fork)
-- [ ] preferences to set editor, e.g.  var executablePath = "mvim";
+- [ ] recent documents app.addRecentDocument('/Users/USERNAME/Desktop/work.type') app.clearRecentDocuments()
 - [ ] issues and site linked in about
 - [ ] keep scroll position on reload
 - [ ] autosave sometimes doesn't refresh (file watcher issue?)
@@ -46,8 +44,12 @@ upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-te
 - [ ] get electron-forge start working (not passing arg; detect mode and default arg to readme?)
 - [ ] load modules more efficiently?
 - [ ] webpack?
+- [ ] extendInfo any - The extra entries for Info.plist.
 
 ### done
+- [x] preferences to set editor, e.g.  var executablePath = "mvim";
+- [x] use tmp file for html
+- [x] fixup markdown inline images to use base path of .md file they are in
 - [x] emoji support
 - [x] cmd+e to edit current markdown in system editor
 - [x] open url only add listener once, not every reload

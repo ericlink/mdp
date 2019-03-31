@@ -1,4 +1,6 @@
+
 const { BrowserWindow, Menu } = require('electron');
+const tmp = require('tmp');
 
 exports.setupMenu = function(app) {
   const template = [
@@ -24,14 +26,24 @@ exports.setupMenu = function(app) {
           }
         },
         {
-          label: 'Open as HTML',
-          accelerator: 'CmdOrCtrl+k',
+          label: 'Select Markdown Editor',
           click: () => {
             BrowserWindow
               .getFocusedWindow()
               .webContents
-              .savePage('/tmp/mdp.html', 'HTMLComplete', (error) => {
-                require('electron').shell.openItem('/tmp/mdp.html');
+              .send('select-editor', 'Select a markdown editor');
+          }
+        },
+        {
+          label: 'Open as HTML',
+          accelerator: 'CmdOrCtrl+k',
+          click: () => {
+            var tmpFile = tmp.fileSync().name + '.html';
+            BrowserWindow
+              .getFocusedWindow()
+              .webContents
+              .savePage(tmpFile, 'HTMLComplete', (error) => {
+                require('electron').shell.openItem(tmpFile);
               });
           }
         },

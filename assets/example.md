@@ -1,14 +1,17 @@
 # example markdown
 
 ## markdown
-- markdown
-- styles
+- github flavored markdown
+- styles *italic* **bold** ~~cross through~~
 
 ## tables
 column | column | column
 :--: | :--: | :--:
 1|2|3
 4|5|6
+
+## images
+![app.png](app.png)
 
 ## highlight.js
 
@@ -21,6 +24,9 @@ function handler(data,err) {
 ## emoji
 :+1: :coffee: :pizza: :beer:
 ## open links in default browser
+[https://ericlink.github.io/mdp/](https://ericlink.github.io/mdp/)
+
+[http://ericlink.github.io/mdp/](https://ericlink.github.io/mdp/)
 
 [https://github.com/ericlink/mdp](https://github.com/ericlink/mdp)
 

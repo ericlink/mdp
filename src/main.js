@@ -1,19 +1,24 @@
 const { app, BrowserWindow, session } = require('electron');
 const log = require('electron-log');
+const menu   = require('./menu.js');
 const path = require('path');
 const update = require('update-electron-app');
 const url = require('url');
 const windowStateKeeper = require('electron-window-state');
-const menu   = require('./menu.js');
 
 log.catchErrors({});
-//log.transports.file.clear();
+
+const setGlobalFile = (file) => {
+  global.file = {
+    name: file,
+    path: path.resolve(path.dirname(file)) + path.sep
+  };
+}
 
 const processArgs = (argv) => {
-  //log.info(argv);
   const lastArg =  argv[argv.length-1];
   if (argv && argv.length > 1 && lastArg !== './src/main.js') {
-    global.file = {name: lastArg};
+    setGlobalFile(lastArg);
   }
 }
 
@@ -44,7 +49,7 @@ const createMainWindow = () => {
 
 app.on('open-file', (event, filePath) => {
   event.preventDefault();
-  global.file = {name: filePath};
+  setGlobalFile(filePath);
   createMainWindow();
 });
 
@@ -107,4 +112,4 @@ if (window) {
 // fixme - may need to push to array so not collected after multiple win?
 // let window = null;
 
-  /* fixme url and slashes window.loadURL(url.format({ pathname: path.join(__dirname, 'view/index.html'), protocol: 'file:', slashes: true })); */
+/* fixme url and slashes window.loadURL(url.format({ pathname: path.join(__dirname, 'view/index.html'), protocol: 'file:', slashes: true })); */

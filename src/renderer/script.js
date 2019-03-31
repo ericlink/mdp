@@ -1,4 +1,5 @@
 const chokidar = require('chokidar');
+const dialog = require('electron').remote.dialog;
 const electron = require('electron');
 const emoji = require('node-emoji');
 const fs = require('fs');
@@ -7,13 +8,12 @@ const log = require('electron-log');
 const marked = require('marked');
 const mermaid = require('mermaid');
 const remote = require('electron').remote;
+const settings = require('electron-settings');
 const shell = require('electron').shell;
 
 log.catchErrors({});
-//log.transports.file.clear();
 
 const readFile = (file) => {
-  //log.info('readFile', file);
   fs.readFile(file, (err, data) => {
     if (err) log.error('readFile', err);
     if (!data || data.length == 0) log.error('readFile', 'no data');
@@ -21,8 +21,8 @@ const readFile = (file) => {
     const emojified = emoji.emojify(data.toString());
     // marked
     document.querySelector('.md').innerHTML = marked(emojified);
-    // highlight.js
-    Array.from(document.querySelectorAll('pre code')).forEach(
+    // highlight.js - here is cleaner than marked function, to avoid mermaid
+    Array.from(document.querySelectorAll('pre code:not(.lang-mermaid)')).forEach(
       block => hljs.highlightBlock(block)
     );
     // mermaid
@@ -48,10 +48,11 @@ const initMermaid = () => {
   mermaid.initialize(mermaidConfig);
 }
 
-const getFileName = () => {
+const getFileObj = () => {
   if (remote.getGlobal('file') && remote.getGlobal('file').name) {
-    const file = remote.getGlobal('file').name;
+    const file = JSON.parse(JSON.stringify(remote.getGlobal('file')));
     remote.getGlobal('file').name = null;
+    remote.getGlobal('file').path = null;
     return file;
   } else {
     remote.getCurrentWindow().close();
@@ -67,24 +68,69 @@ const watchFile = (file) => {
 }
 
 // edit current markdown file
-electron.ipcRenderer.on('edit-file', (event, arg) => {
-  var child = require('child_process').execFile;
-  var executablePath = "/Users/elink/OneDrive/bin/mvim"; // needs full path to work from finder open etc.
-  var parameters = [file];
-  child(executablePath, parameters, function(err, data) {
-    if (err) log.error(err);
-  });
+electron.ipcRenderer.on('edit-file', () => {
+  const editor = settings.get('editor');
+  if(editor) {
+    editFile(editor);
+  } else {
+    dialog.showOpenDialog(remote.getCurrentWindow(),
+      { properties: [ 'openFile' ],
+        message: 'Please select a markdown editor application'
+      },
+      (files) => {
+        if (files === undefined) return;
+        const executablePath = files[0];
+        settings.set('editor',executablePath);
+        editFile(executablePath);
+      });
+  }
 });
 
+electron.ipcRenderer.on('select-editor', () => {
+  dialog.showOpenDialog(remote.getCurrentWindow(),
+    { properties: [ 'openFile' ],
+      message: 'Please select a markdown editor application'
+    },
+    (files) => {
+      if (files === undefined) return;
+      settings.set('editor', files[0]);
+    }
+  );
+});
+
+const editFile = (editorPath) => {
+  const child = require('child_process').execFile;
+  child(editorPath, [file], (err, data) => {
+    if (err) log.error(err);
+  });
+}
+
 // open all links in external browser
-document.addEventListener('click', function (event) {
+document.addEventListener('click', (event) => {
   if (event.target.tagName === 'A' && event.target.href.startsWith('http')) {
     event.preventDefault();
     shell.openExternal(event.target.href);
   }
 })
 
-const file = getFileName();
+const initMarked = (path) => {
+  marked.setOptions({
+    baseUrl: path,
+    breaks: true,
+    gfm: true,
+    pedantic: false,
+    renderer: new marked.Renderer(),
+    sanitize: false,
+    smartLists: true,
+    smartypants: false,
+    tables: true,
+    xhtml: false
+  });
+}
+
+const fileObj = getFileObj();
+const file = fileObj.name;
+initMarked(fileObj.path);
 initMermaid();
 readFile(file);
 watchFile(file);

@@ -12,6 +12,9 @@ const settings = require('electron-settings');
 const shell = require('electron').shell;
 
 log.catchErrors({});
+log.transports.console.level = process.env.DEV_MODE ? 'silly' : 'info';
+log.transports.file.level = process.env.DEV_MODE ? 'silly' : 'info';
+log.debug('--- debug mode ---');
 
 const readFile = (file) => {
   fs.readFile(file, (err, data) => {

@@ -7,6 +7,9 @@ const url = require('url');
 const windowStateKeeper = require('electron-window-state');
 
 log.catchErrors({});
+log.transports.console.level = process.env.DEV_MODE ? 'silly' : 'info';
+log.transports.file.level = process.env.DEV_MODE ? 'silly' : 'info';
+log.debug('--- debug mode ---');
 
 const setGlobalFile = (file) => {
   global.file = {

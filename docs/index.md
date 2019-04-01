@@ -1,6 +1,6 @@
 # mdp
 
-**m**ark **d**own **p**review using marked, highlight.js, mermaid, node-emoji and live reload
+<b>m</b>ark<b>d</b>own <b>p</b>review using marked, highlight.js, mermaid, node-emoji and live reload
 
 [mdp releases](https://github.com/ericlink/mdp/releases)
 
@@ -36,7 +36,7 @@ _Open as HTML_ &#8984;K
 
 _Edit Markdown_ &#8984;E
 
-_Zoom_ - zoom in &#8984;+, zoom out &#8984;, actual size &#8984;0
+_Zoom_ - zoom in &#8984;+, zoom out &#8984;-, actual size &#8984;0
 
 ### macOS
 

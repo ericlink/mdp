@@ -1,0 +1,1 @@
+Please fork and submit your PR with enough comments for someone who's never seen it. Thanks for the contrib!  The goal of mdp is to make a simple previewer that handles the most common use cases.  If 80% of the world used markdown, could mdp be the 20% solution?

@@ -79,13 +79,16 @@ upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-te
 ## todo
 
 ### features
-- [ ] recent documents app.addRecentDocument('/Users/USERNAME/Desktop/work.type') app.clearRecentDocuments()
-- [ ] issues and site linked in about
-- [ ] keep scroll position on reload
-- [ ] autosave sometimes doesn't refresh (file watcher issue?)
-- [ ] vim keymappings
+- [ ] print style sheets
 - [ ] get working with *highlight.js* themes
 - [ ] get working with *marked* themes
+- [ ] get working with mermaid themes / css (mermaid-cli -C)
+
+- [ ] keep scroll position on reload
+- [ ] vim keymappings
+- [ ] recent documents app.addRecentDocument('/Users/USERNAME/Desktop/work.type') app.clearRecentDocuments()
+- [ ] issues and site linked in about
+- [ ] autosave sometimes doesn't refresh (file watcher issue?)
 - [ ] zoom by window?
 
 ### package and install

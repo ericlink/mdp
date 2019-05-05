@@ -1,17 +1,18 @@
 {
   "name": "mdp",
+  "version": "0.0.7",
+  "license": "Apache-2.0",
   "repository": "https://github.com/ericlink/mdp",
   "productName": "mdp",
   "description": "mdp",
+  "author": "elink",
+  "main": "./src/main.js",
   "keywords": [
     "markdown",
     "electron",
     "livereload",
     "live-reload"
   ],
-  "main": "./src/main.js",
-  "version": "0.0.5",
-  "author": "elink",
   "scripts": {
     "dev-publish": "npm run package && rm -rf /Applications/mdp.app/ && mv ./out/mdp-darwin-x64/mdp.app /Applications/",
     "dev": "./node_modules/.bin/electron ./src/main.js ./assets/example.md",
@@ -25,15 +26,15 @@
     "lint": "echo \"No linting configured\""
   },
   "dependencies": {
-    "chokidar": "^2.1.2",
+    "chokidar": "^2.1.5",
     "cryptiles": "^4.1.3",
     "electron-cookies": "*",
-    "electron-log": "^3.0.1",
+    "electron-log": "^3.0.5",
     "electron-reload": "^1.4.0",
     "electron-settings": "^3.2.0",
     "electron-window-state": "^5.0.2",
     "highlight.js": "^9.12.0",
-    "hoek": "^6.1.2",
+    "hoek": "^6.1.3",
     "marked": "^0.3.12",
     "mermaid": "^8.0.0",
     "node-emoji": "^1.10.0",
@@ -47,8 +48,8 @@
     "@electron-forge/maker-rpm": "6.0.0-beta.22",
     "@electron-forge/maker-squirrel": "6.0.0-beta.22",
     "@electron-forge/maker-zip": "6.0.0-beta.22",
-    "@electron-forge/publisher-github": "^6.0.0-beta.22",
-    "electron": "^4.0.8",
+    "@electron-forge/publisher-github": "^6.0.0-beta.34",
+    "electron": "^4.2.0",
     "electron-prebuilt-compile": "4.0.0"
   },
   "config": {

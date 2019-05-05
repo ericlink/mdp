@@ -2,16 +2,6 @@ const { BrowserWindow, Menu } = require('electron');
 const tmp = require('tmp');
 
 exports.setupMenu = function(app) {
-  const openAsHtml = () => {
-    var tmpFile = tmp.fileSync().name + '.html';
-    BrowserWindow
-      .getFocusedWindow()
-      .webContents
-      .savePage(tmpFile, 'HTMLComplete', (error) => {
-        require('electron').shell.openItem(tmpFile);
-      });
-  };
-
   const template = [
     {
       label: 'Edit',
@@ -45,13 +35,16 @@ exports.setupMenu = function(app) {
         },
         {
           label: 'Open as HTML',
-          accelerator: 'CmdOrCtrl+o',
-          click: openAsHtml
-        },
-        {
-          label: 'Open as HTML',
           accelerator: 'CmdOrCtrl+k',
-          click: openAsHtml
+          click: () => {
+            var tmpFile = tmp.fileSync().name + '.html';
+            BrowserWindow
+              .getFocusedWindow()
+              .webContents
+              .savePage(tmpFile, 'HTMLComplete', (error) => {
+                require('electron').shell.openItem(tmpFile);
+              });
+          }
         },
         { type: 'separator'},
         { role: 'zoomin' },
@@ -81,7 +74,6 @@ exports.setupMenu = function(app) {
         { role: 'toggledevtools' }
       ]}
   ];
-
   if (process.platform === 'darwin') {
     template.unshift({
       label: app.getName(),
@@ -97,7 +89,6 @@ exports.setupMenu = function(app) {
         {role: 'quit'}
       ]
     });
-
     // Edit menu
     template[1].submenu.push(
       {type: 'separator'},
@@ -109,7 +100,6 @@ exports.setupMenu = function(app) {
         ]
       }
     );
-
   }
 
   const menu = Menu.buildFromTemplate(template);

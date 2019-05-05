@@ -18,8 +18,11 @@ log.debug('--- debug mode ---');
 
 const readFile = (file) => {
   fs.readFile(file, (err, data) => {
-    if (err) log.error('readFile', err);
-    if (!data || data.length == 0) log.error('readFile', 'no data');
+    if (err) {
+      log.error('readFile', err);
+      return;
+    }
+    if (!data || data.length == 0) return;
     // emojify
     const emojified = emoji.emojify(data.toString());
     // marked
@@ -29,7 +32,7 @@ const readFile = (file) => {
       block => hljs.highlightBlock(block)
     );
     // mermaid
-    Array.from(document.querySelectorAll('.lang-mermaid')).forEach(
+    Array.from(document.querySelectorAll('pre code.lang-mermaid')).forEach(
       block => mermaid.init(undefined, block)
     );
   })
@@ -76,30 +79,28 @@ electron.ipcRenderer.on('edit-file', () => {
   if(editor) {
     editFile(editor);
   } else {
-    dialog.showOpenDialog(remote.getCurrentWindow(),
-      { properties: [ 'openFile' ],
-        message: 'Please select a markdown editor application'
-      },
-      (files) => {
-        if (files === undefined) return;
-        const executablePath = files[0];
-        settings.set('editor',executablePath);
-        editFile(executablePath);
-      });
+    const files = selectEditor();
+    if (files) {
+      editFile(files[0]);
+    }
   }
 });
 
 electron.ipcRenderer.on('select-editor', () => {
-  dialog.showOpenDialog(remote.getCurrentWindow(),
+  selectEditor();
+});
+
+const selectEditor = (handler) => {
+  const files = dialog.showOpenDialog(remote.getCurrentWindow(),
     { properties: [ 'openFile' ],
       message: 'Please select a markdown editor application'
-    },
-    (files) => {
-      if (files === undefined) return;
-      settings.set('editor', files[0]);
     }
   );
-});
+  if (files) {
+    settings.set('editor', files[0]);
+  }
+  return files;
+}
 
 const editFile = (editorPath) => {
   const child = require('child_process').execFile;

@@ -1,8 +1,17 @@
-
 const { BrowserWindow, Menu } = require('electron');
 const tmp = require('tmp');
 
 exports.setupMenu = function(app) {
+  const openAsHtml = () => {
+    var tmpFile = tmp.fileSync().name + '.html';
+    BrowserWindow
+      .getFocusedWindow()
+      .webContents
+      .savePage(tmpFile, 'HTMLComplete', (error) => {
+        require('electron').shell.openItem(tmpFile);
+      });
+  };
+
   const template = [
     {
       label: 'Edit',
@@ -36,16 +45,13 @@ exports.setupMenu = function(app) {
         },
         {
           label: 'Open as HTML',
+          accelerator: 'CmdOrCtrl+o',
+          click: openAsHtml
+        },
+        {
+          label: 'Open as HTML',
           accelerator: 'CmdOrCtrl+k',
-          click: () => {
-            var tmpFile = tmp.fileSync().name + '.html';
-            BrowserWindow
-              .getFocusedWindow()
-              .webContents
-              .savePage(tmpFile, 'HTMLComplete', (error) => {
-                require('electron').shell.openItem(tmpFile);
-              });
-          }
+          click: openAsHtml
         },
         { type: 'separator'},
         { role: 'zoomin' },

@@ -79,7 +79,7 @@ upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-te
 ## todo
 
 ### features
-- [ ] print style sheets
+- [x] print style sheets
 - [ ] get working with *highlight.js* themes
 - [ ] get working with *marked* themes
 - [ ] get working with mermaid themes / css (mermaid-cli -C)

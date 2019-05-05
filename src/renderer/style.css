@@ -13,10 +13,15 @@ body {
   font-family: "Roboto", Helvetica, "Hiragino Sans GB", Arial, sans-serif;
   font-size: 16px;
   line-height: 18px;
-  color: #fff;
-  background-color: #282a36;
   margin: 10px 13px 10px 13px;
 }
+@media only screen {
+  body {
+    color: #fff;
+    background-color: #282a36;
+  }
+}
+
 table {
   margin: 10px 0 15px 0;
   border-collapse: collapse;
@@ -41,8 +46,12 @@ a img {
 p {
   margin-bottom: 9px;
 }
+@media only screen {
+  h1, h2, h3, h4, h5, h6 {
+    color: #fff;
+  }
+}
 h1, h2, h3, h4, h5, h6 {
-  color: #fff;
   line-height: 36px;
 }
 h1 {
@@ -129,10 +138,8 @@ kbd {
   }
 }
 /*
-
 Atom One Dark by Daniel Gamage
 Original One Dark Syntax theme from https://github.com/atom/one-dark-syntax
-
 base:    #282c34
 mono-1:  #abb2bf
 mono-2:  #818896
@@ -145,29 +152,29 @@ hue-5:   #e06c75
 hue-5-2: #be5046
 hue-6:   #d19a66
 hue-6-2: #e6c07b
-
 */
 
+@media only screen {
+  .hljs {
+    background: #282c34;
+  }
+}
 .hljs {
   display: block;
   overflow-x: auto;
   padding: 0.5em;
   color: #abb2bf;
-  background: #282c34;
 }
-
 .hljs-comment,
 .hljs-quote {
   color: #5c6370;
   font-style: italic;
 }
-
 .hljs-doctag,
 .hljs-keyword,
 .hljs-formula {
   color: #c678dd;
 }
-
 .hljs-section,
 .hljs-name,
 .hljs-selector-tag,
@@ -175,11 +182,9 @@ hue-6-2: #e6c07b
 .hljs-subst {
   color: #e06c75;
 }
-
 .hljs-literal {
   color: #56b6c2;
 }
-
 .hljs-string,
 .hljs-regexp,
 .hljs-addition,
@@ -187,12 +192,10 @@ hue-6-2: #e6c07b
 .hljs-meta-string {
   color: #98c379;
 }
-
 .hljs-built_in,
 .hljs-class .hljs-title {
   color: #e6c07b;
 }
-
 .hljs-attr,
 .hljs-variable,
 .hljs-template-variable,
@@ -203,7 +206,6 @@ hue-6-2: #e6c07b
 .hljs-number {
   color: #d19a66;
 }
-
 .hljs-symbol,
 .hljs-bullet,
 .hljs-link,
@@ -212,16 +214,12 @@ hue-6-2: #e6c07b
 .hljs-title {
   color: #61aeee;
 }
-
 .hljs-emphasis {
   font-style: italic;
 }
-
 .hljs-strong {
   font-weight: bold;
 }
-
 .hljs-link {
   text-decoration: underline;
 }
-

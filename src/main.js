@@ -19,11 +19,9 @@ const setGlobalFile = (file) => {
 }
 
 const processArgs = (argv) => {
-  // darwin is handled by open-file event, skip this
-  if (process.platform === 'darwin') return;
-
   const lastArg =  argv[argv.length-1];
-  if (argv && argv.length > 1 && lastArg !== './src/main.js') {
+  const macFinderArgPrefixProcessSerialNumber = '-psn';
+  if (argv && argv.length > 1 && lastArg !== './src/main.js' && !lastArg.startsWith(macFinderArgPrefixProcessSerialNumber)) {
     setGlobalFile(lastArg);
   }
 }

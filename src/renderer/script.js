@@ -28,11 +28,11 @@ const readFile = (file) => {
     // marked
     document.querySelector('.md').innerHTML = marked(emojified);
     // highlight.js - here is cleaner than marked function, to avoid mermaid
-    Array.from(document.querySelectorAll('pre code:not(.lang-mermaid)')).forEach(
+    Array.from(document.querySelectorAll('pre code:not(.language-mermaid)')).forEach(
       block => hljs.highlightBlock(block)
     );
     // mermaid
-    Array.from(document.querySelectorAll('pre code.lang-mermaid')).forEach(
+    Array.from(document.querySelectorAll('pre code.language-mermaid')).forEach(
       block => mermaid.init(undefined, block)
     );
   })

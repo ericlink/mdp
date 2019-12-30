@@ -1,3 +1,5 @@
+<img src="https://electronjs.org/app-img/mdp/mdp-icon-128.png">
+
 # mdp
 <b>m</b>ark<b>d</b>own <b>p</b>review using marked, highlight.js, mermaid, node-emoji and live reload
 

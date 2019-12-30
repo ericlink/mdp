@@ -43,13 +43,13 @@
     "url": "^0.11.0"
   },
   "devDependencies": {
-    "@electron-forge/cli": "^6.0.0-beta.39",
-    "@electron-forge/maker-deb": "^6.0.0-beta.39",
-    "@electron-forge/maker-rpm": "^6.0.0-beta.39",
-    "@electron-forge/maker-squirrel": "^6.0.0-beta.39",
-    "@electron-forge/maker-zip": "^6.0.0-beta.39",
-    "@electron-forge/publisher-github": "^6.0.0-beta.39",
-    "electron": "^5.0.4",
+    "@electron-forge/cli": "^6.0.0-beta.47",
+    "@electron-forge/maker-deb": "^6.0.0-beta.47",
+    "@electron-forge/maker-rpm": "^6.0.0-beta.47",
+    "@electron-forge/maker-squirrel": "^6.0.0-beta.47",
+    "@electron-forge/maker-zip": "^6.0.0-beta.47",
+    "@electron-forge/publisher-github": "^6.0.0-beta.47",
+    "electron": "^5.0.13",
     "electron-forge": "^5.2.4",
     "electron-prebuilt-compile": "4.0.0"
   },

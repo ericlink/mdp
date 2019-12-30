@@ -123,9 +123,9 @@ kbd {
 * {
   -webkit-print-color-adjust: exact;
 }
-@media screen and (min-width: 914px) {
+@media screen {
   body {
-    width: 854px;
+    width: 100%;
     margin:10px auto;
   }
 }

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleSupportedPlatforms</key>
+	<array>
+		<string>MacOSX</string>
+	</array>
+	<key>LSArchitecturePriority</key>
+	<array>
+		<string>x86_64</string>
+	</array>
+    <key>LSRequiresIPhoneOS</key>
+    <false/>
+	<key>LSMinimumSystemVersion</key>
+	<string>10.10.0</string>
+</dict>
+</plist>
+

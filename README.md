@@ -1,3 +1,35 @@
+```
+ERROR ITMS-90237: "The product archive package's signature is invalid.
+Ensure that it is signed with your "3rd Party Mac Developer Installer" certificate."
+
+ERROR ITMS-90255: "The installer package includes files that are only readable by the root user.
+This will prevent verification of the application's code signature when your app is run.
+Ensure that non-root users can read the files in your app."
+
+ERROR ITMS-90296: "App sandbox not enabled. The following executables must include the
+"com.apple.security.app-sandbox" entitlement with a Boolean value of true in the entitlements property list:
+[( "com.electron.mdp.pkg/Payload/mdp.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/crashpad_handler", "com.electron.mdp.pkg/Payload/mdp.app/Contents/Frameworks/Squirrel.framework/Versions/A/Resources/ShipIt", "com.electron.mdp.pkg/Payload/mdp.app/Contents/Frameworks/mdp Helper.app/Contents/MacOS/mdp Helper", "com.electron.mdp.pkg/Payload/mdp.app/Contents/MacOS/mdp" )]
+Refer to App Sandbox page at https://developer.apple.com/documentation/security/app_sandbox for more information on sandboxing your app."
+```
+
+```
+ERROR ITMS-90255: "The installer package includes files that are only readable by the root user.
+This will prevent verification of the application's code signature when your app is run.
+Ensure that non-root users can read the files in your app."
+
+ERROR ITMS-90287: "Invalid Code Signing Entitlements.
+The entitlements in your app bundle signature do not match the ones that are contained in the provisioning profile.
+The bundle contains a key that is not included in the provisioning profile:
+'com.apple.application-identifier' in 'com.electron.mdp.pkg/Payload/mdp.app/Contents/MacOS/mdp'."
+
+ERROR ITMS-90287: "Invalid Code Signing Entitlements.
+The entitlements in your app bundle signature do not match the ones that are contained in the provisioning profile.
+The bundle contains a key that is not included in the provisioning profile:
+'com.apple.developer.team-identifier' in 'com.electron.mdp.pkg/Payload/mdp.app/Contents/MacOS/mdp'."
+```
+
+
+
 <img src="https://electronjs.org/app-img/mdp/mdp-icon-128.png">
 
 # mdp
@@ -78,10 +110,14 @@ upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-te
 1. `npm run package`
 1. `npm run make && npm run publish`
 
+### package for app store
+1. `cat ~/.appl_pass`
+1. `npm make`
+1. `npm run apple-upload`
+
 ## todo
 
 ### features
-- [x] print style sheets
 - [ ] get working with *highlight.js* themes
 - [ ] get working with *marked* themes
 - [ ] get working with mermaid themes / css (mermaid-cli -C)
@@ -105,6 +141,7 @@ upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-te
 - [ ] extendInfo any - The extra entries for Info.plist.
 
 ### done
+- [x] print style sheets
 - [x] preferences to set editor, e.g.  var executablePath = "mvim";
 - [x] use tmp file for html
 - [x] fixup markdown inline images to use base path of .md file they are in

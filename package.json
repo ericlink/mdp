@@ -73,7 +73,7 @@
         "osxSign": {
           "identity": "Developer ID Application: Eric Link (W8QA48B3XU)",
           "hardenedRuntime": true,
-          "gatekeeperAssess": true,
+          "gatekeeperAssess": false,
           "entitlements": "entitlements.plist",
           "entitlements-inherit": "entitlements.plist",
           "signature-flags": "library"

@@ -25,4 +25,10 @@ upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-te
 1. `npm make`
 1. `npm run apple-upload`
 
+### publish to github
+```
+`cat ~/.git-mdp-publish-token`
+env |grep GIT
+npm run publish
+```
 

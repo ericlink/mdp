@@ -58,6 +58,18 @@ external links open in your default browser
 
 put `mdp.app/Contents/Resources/app/package/mdp` script in your path
 
+### internal mac distribution
+
+build unsigned Apple Silicon artifacts with:
+
+`npm run make:mac-internal`
+
+Electron Forge writes the unsigned `.dmg` and `.zip` to `out/make/`.
+
+Install by opening the `.dmg` and dragging `mdp.app` into `/Applications`.
+
+To make `mdp` the default app for Markdown files, pick any `.md` file in Finder, choose `Get Info`, set `Open with` to `mdp`, then click `Change All...`.
+
 ### logs
 
 unexpected main-process failures are written to `/tmp/mdp-main.log`

@@ -1,55 +1,206 @@
-const { app, BrowserWindow, session } = require('electron');
-const log = require('electron-log');
+const { app, BrowserWindow, dialog, ipcMain } = require('electron');
+const fs = require('fs');
 const menu   = require('./menu.js');
 const path = require('path');
-const update = require('update-electron-app');
-const url = require('url');
+const { pathToFileURL } = require('url');
 const windowStateKeeper = require('electron-window-state');
 
-log.catchErrors({});
-log.transports.console.level = process.env.DEV_MODE ? 'silly' : 'info';
-log.transports.file.level = process.env.DEV_MODE ? 'silly' : 'info';
-log.debug('--- debug mode ---');
+const appRoot = path.resolve(__dirname, '..');
+const mainTracePath = '/tmp/mdp-main.log';
+const windows = new Set();
+const pendingFilesByWebContentsId = new Map();
+
+const debugBoot = (...args) => {
+  if (process.env.MDP_DEBUG_BOOT === '1') {
+    fs.appendFileSync('/tmp/mdp-debug.log', `[mdp debug] ${JSON.stringify(args)}\n`);
+  }
+};
+
+const formatMainLogValue = (value) => {
+  if (value instanceof Error) {
+    return value.stack || `${value.name}: ${value.message}`;
+  }
+
+  if (typeof value === 'object' && value !== null) {
+    try {
+      return JSON.stringify(value);
+    } catch (error) {
+      return Object.prototype.toString.call(value);
+    }
+  }
+
+  return String(value);
+};
+
+const writeMainLog = (level, ...args) => {
+  const text = args.map(formatMainLogValue).join(' ');
+
+  if (level === 'error') {
+    console.error(text);
+  } else {
+    console.log(text);
+  }
+
+  fs.appendFileSync(mainTracePath, `[${level}] ${text}\n`);
+};
+
+process.on('uncaughtException', (error) => {
+  writeMainLog('error', 'uncaughtException', error);
+});
+
+process.on('unhandledRejection', (reason) => {
+  writeMainLog('error', 'unhandledRejection', reason);
+});
+
+const resolveAppFilePath = (file) => {
+  if (!file) {
+    return null;
+  }
+
+  if (path.isAbsolute(file)) {
+    return file;
+  }
+
+  const cwdResolved = path.resolve(process.cwd(), file);
+  if (fs.existsSync(cwdResolved)) {
+    return cwdResolved;
+  }
+
+  return path.resolve(appRoot, file);
+};
+
+const normalizeFileState = (file) => {
+  const absoluteFile = resolveAppFilePath(file);
+
+  return {
+    name: absoluteFile,
+    path: path.dirname(absoluteFile) + path.sep
+  };
+};
 
 const setGlobalFile = (file) => {
-  global.file = {
-    name: file,
-    path: path.resolve(path.dirname(file)) + path.sep
-  };
-}
+  global.file = normalizeFileState(file);
+};
+
+const resolveFileArg = (candidate) => {
+  if (!candidate || candidate.startsWith('-')) {
+    return null;
+  }
+
+  const absoluteCandidate = resolveAppFilePath(candidate);
+
+  if (absoluteCandidate === path.resolve(__filename)) {
+    return null;
+  }
+
+  try {
+    const stats = fs.statSync(absoluteCandidate);
+    return stats.isFile() ? candidate : null;
+  } catch (error) {
+    return null;
+  }
+};
+
+const getFileArg = (argv = []) => {
+  const candidateArgs = (app.isPackaged ? argv.slice(1) : argv.slice(2))
+    .filter((arg) => arg && !arg.startsWith('-psn'))
+    .map(resolveFileArg)
+    .filter(Boolean);
+
+  if (candidateArgs.length > 0) {
+    return candidateArgs[candidateArgs.length - 1];
+  }
+
+  if (process.env.MDP_DEFAULT_FILE) {
+    return process.env.MDP_DEFAULT_FILE;
+  }
+
+  switch (process.env.npm_lifecycle_event) {
+    case 'dev-readme':
+      return 'README.md';
+    case 'dev':
+    case 'start':
+      return 'assets/example.md';
+    default:
+      return null;
+  }
+};
 
 const processArgs = (argv) => {
-  const lastArg =  argv[argv.length-1];
-  const macFinderArgPrefixProcessSerialNumber = '-psn';
-  if (argv && argv.length > 1 && lastArg !== './src/main.js' && !lastArg.startsWith(macFinderArgPrefixProcessSerialNumber)) {
-    setGlobalFile(lastArg);
+  const file = getFileArg(argv);
+  debugBoot('processArgs', { argv, file, defaultFile: process.env.MDP_DEFAULT_FILE || null });
+
+  if (file) {
+    setGlobalFile(file);
   }
-}
+};
 
 const createMainWindow = () => {
+  debugBoot('createMainWindow', { file: global.file || null });
   if (!global.file) return;
 
-  let mainWindowState = windowStateKeeper({ defaultWidth: 1000, defaultHeight: 800 });
+  const mainWindowState = windowStateKeeper({ defaultWidth: 1000, defaultHeight: 800 });
+  const fileState = global.file;
+  global.file = null;
 
   const window = new BrowserWindow({
-    show: false,
+    show: true,
     title: 'mdp',
-    'x': mainWindowState.x,
-    'y': mainWindowState.y,
-    'width': mainWindowState.width,
-    'height': mainWindowState.height,
+    x: mainWindowState.x,
+    y: mainWindowState.y,
+    width: mainWindowState.width,
+    height: mainWindowState.height,
     webPreferences: {
       nodeIntegration: true,
-      partition: "persist:main",
+      contextIsolation: false,
+      partition: 'persist:main',
       webSecurity: false,
       allowRunningInsecureContent: true
     }
   });
 
+  windows.add(window);
+  pendingFilesByWebContentsId.set(window.webContents.id, fileState);
   mainWindowState.manage(window);
-  window.loadURL('file://' + path.join(__dirname, './renderer/index.html'));
+  const rendererUrl = pathToFileURL(path.join(__dirname, 'renderer', 'index.html'));
+  rendererUrl.searchParams.set('name', fileState.name);
+  rendererUrl.searchParams.set('path', fileState.path);
+
+  window.loadURL(rendererUrl.toString());
   window.once('ready-to-show', () => { window.show(); });
-}
+  window.webContents.once('did-finish-load', () => {
+    window.show();
+    debugBoot('did-finish-load', { url: window.webContents.getURL() });
+  });
+  window.webContents.on('did-fail-load', (event, code, description, validatedURL) => {
+    writeMainLog('error', 'did-fail-load', { code, description, validatedURL });
+  });
+  window.on('closed', () => {
+    pendingFilesByWebContentsId.delete(window.webContents.id);
+    windows.delete(window);
+    debugBoot('window closed');
+  });
+};
+
+ipcMain.handle('consume-file', (event) => {
+  const fileState = pendingFilesByWebContentsId.get(event.sender.id) || null;
+
+  if (fileState) {
+    pendingFilesByWebContentsId.delete(event.sender.id);
+  }
+
+  return fileState;
+});
+
+ipcMain.handle('select-editor', async (event) => {
+  const window = BrowserWindow.fromWebContents(event.sender);
+  const result = await dialog.showOpenDialog(window, {
+    properties: ['openFile'],
+    message: 'Please select a markdown editor application'
+  });
+
+  return result.canceled ? [] : result.filePaths;
+});
 
 app.on('open-file', (event, filePath) => {
   event.preventDefault();
@@ -57,17 +208,23 @@ app.on('open-file', (event, filePath) => {
   createMainWindow();
 });
 
-if (!app.requestSingleInstanceLock()) {
+const allowMultiInstance = process.env.MDP_ALLOW_MULTI_INSTANCE === '1';
+const hasSingleInstanceLock = allowMultiInstance || app.requestSingleInstanceLock();
+
+if (!hasSingleInstanceLock) {
   // quit and let second-instance handler take it
-  app.quit()
+  app.quit();
 } else {
   // register these only on first instance that got the lock
-  app.on('second-instance', (event, commandLine, workingDirectory) => {
-    processArgs(commandLine);
-    createMainWindow();
-  });
+  if (!allowMultiInstance) {
+    app.on('second-instance', (event, commandLine) => {
+      processArgs(commandLine);
+      createMainWindow();
+    });
+  }
 
   app.on('ready', () => {
+    debugBoot('app ready');
     menu.setupMenu(app);
     processArgs(process.argv);
     createMainWindow();
@@ -75,7 +232,7 @@ if (!app.requestSingleInstanceLock()) {
 
   app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
-      app.quit()
+      app.quit();
     }
   });
 

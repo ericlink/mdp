@@ -1,4 +1,4 @@
-const { BrowserWindow, Menu } = require('electron');
+const { BrowserWindow, Menu, shell } = require('electron');
 const tmp = require('tmp');
 
 exports.setupMenu = function(app) {
@@ -37,12 +37,12 @@ exports.setupMenu = function(app) {
           label: 'Open as HTML',
           accelerator: 'CmdOrCtrl+k',
           click: () => {
-            var tmpFile = tmp.fileSync().name + '.html';
+            const tmpFile = tmp.fileSync().name + '.html';
             BrowserWindow
               .getFocusedWindow()
               .webContents
-              .savePage(tmpFile, 'HTMLComplete', (error) => {
-                require('electron').shell.openItem(tmpFile);
+              .savePage(tmpFile, 'HTMLComplete', () => {
+                shell.openPath(tmpFile);
               });
           }
         },

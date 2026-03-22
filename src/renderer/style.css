@@ -36,19 +36,19 @@ body {
 }
 
 .container {
-  width: min(980px, 100%);
-  margin: 0 auto;
-  padding: 40px 22px 64px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 .md {
-  min-height: calc(100vh - 104px);
-  padding: 32px;
+  min-height: 100vh;
+  padding: 0;
   border: 0;
-  border-radius: 28px;
-  background: var(--panel);
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(20px);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .md > :first-child {

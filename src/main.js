@@ -3,6 +3,7 @@ const { execFile } = require('child_process');
 const fs = require('fs');
 const menu = require('./menu.js');
 const path = require('path');
+const tmp = require('tmp');
 const { fileURLToPath, pathToFileURL } = require('url');
 const windowStateKeeper = require('electron-window-state');
 
@@ -414,6 +415,32 @@ ipcMain.handle('mdp:open-external', async (event, url) => {
 
   await shell.openExternal(url);
   return true;
+});
+
+ipcMain.handle('mdp:export-html', async (event, payload = {}) => {
+  ensureTrustedIpcSender(event);
+
+  const html = typeof payload.html === 'string' ? payload.html : '';
+  if (!html) {
+    throw new Error('No HTML content available to export.');
+  }
+
+  const sourceFilePath = resolveFilePath(payload.filePath);
+  const sourceFileName = sourceFilePath ? path.basename(sourceFilePath, path.extname(sourceFilePath)) : 'mdp-preview';
+  const tempFile = tmp.fileSync({
+    discardDescriptor: true,
+    postfix: '.html',
+    prefix: `${sourceFileName}-`
+  });
+
+  await fs.promises.writeFile(tempFile.name, html, 'utf8');
+  const result = await shell.openPath(tempFile.name);
+
+  if (result !== '') {
+    throw new Error(result);
+  }
+
+  return tempFile.name;
 });
 
 app.on('open-file', (event, filePath) => {

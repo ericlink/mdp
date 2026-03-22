@@ -73,6 +73,14 @@ const getFileName = (filePath) => {
   return parts[parts.length - 1] || filePath;
 };
 
+const escapeHtml = (value) => {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+};
+
 const getCodeLanguage = (codeBlock) => {
   for (const className of codeBlock.classList) {
     if (className.startsWith('language-')) {
@@ -397,6 +405,38 @@ const renderPlainText = (content) => {
   markdownContainer.replaceChildren(pre);
 };
 
+const buildStandaloneHtml = () => {
+  const title = state.currentFile ? `${getFileName(state.currentFile)} · mdp` : 'mdp';
+  const baseHref = state.currentFileUrl ? new URL('.', state.currentFileUrl).toString() : window.location.href;
+  const styles = Array.from(document.styleSheets)
+    .map((styleSheet) => {
+      try {
+        return Array.from(styleSheet.cssRules).map((rule) => rule.cssText).join('\n');
+      } catch (error) {
+        return '';
+      }
+    })
+    .filter(Boolean)
+    .join('\n\n');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>${escapeHtml(title)}</title>
+    <base href="${escapeHtml(baseHref)}">
+    <style>${styles}</style>
+  </head>
+  <body>
+    <main class="container">
+      <article class="md">${markdownContainer.innerHTML}</article>
+    </main>
+  </body>
+</html>
+`;
+};
+
 const renderFile = async (filePath, { historyMode = 'replace' } = {}) => {
   if (!filePath) {
     showStateCard('No file selected', 'Launch mdp with a markdown file to preview.');
@@ -480,6 +520,22 @@ const editCurrentFile = async () => {
   }
 };
 
+const viewCurrentFileAsHtml = async () => {
+  if (!state.currentFile) {
+    return;
+  }
+
+  try {
+    await appApi.exportHtml({
+      filePath: state.currentFile,
+      html: buildStandaloneHtml()
+    });
+  } catch (error) {
+    console.error(error);
+    showStateCard('Unable to open HTML preview', error.message || 'The rendered document could not be exported.');
+  }
+};
+
 const handleLinkClick = async (event) => {
   const link = event.target.closest('a[href]');
   if (!link) {
@@ -531,6 +587,11 @@ const initMenuActions = () => {
 
     if (action === 'select-editor') {
       await selectEditorPath();
+      return;
+    }
+
+    if (action === 'view-as-html') {
+      await viewCurrentFileAsHtml();
     }
   });
 };

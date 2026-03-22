@@ -25,7 +25,7 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 17px;
   line-height: 1.7;
   color: var(--text);
@@ -44,7 +44,7 @@ body {
 .md {
   min-height: calc(100vh - 104px);
   padding: 32px;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: 28px;
   background: var(--panel);
   box-shadow: var(--shadow);
@@ -150,7 +150,7 @@ blockquote {
   border-left: 4px solid rgba(143, 211, 255, 0.5);
   border-radius: 0 16px 16px 0;
   background: var(--quote-bg);
-  font-family: "Baskerville", "Libre Baskerville", Georgia, serif;
+  font-family: inherit;
   font-style: italic;
 }
 

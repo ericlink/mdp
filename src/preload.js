@@ -92,6 +92,7 @@ contextBridge.exposeInMainWorld('mdp', {
   },
   openExternal: (url) => ipcRenderer.invoke('mdp:open-external', url),
   openPath: (value) => ipcRenderer.invoke('mdp:open-path', value),
+  exportHtml: (payload) => ipcRenderer.invoke('mdp:export-html', payload),
   readFile: (filePath) => ipcRenderer.invoke('mdp:read-file', filePath),
   watchFile: (filePath) => ipcRenderer.invoke('mdp:watch-file', filePath),
   unwatchFile: () => ipcRenderer.invoke('mdp:unwatch-file'),

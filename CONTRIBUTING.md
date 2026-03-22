@@ -3,15 +3,18 @@ Please fork and submit your PR with enough comments for someone who's never seen
 ## dev notes
 1. `npm install`
 1. `npm run dev`
+1. `npm run dev-readme`
 
 ### test and publish
 1. `npm run dev &` - run in background to test open-file with subsequent open
 1. `npm run dev-noarg` - tests launch with no arg, app starts with no window
-1. `./node_modules/.bin/electron ./src/main.js ./README.md`
+1. `npm run dev-readme`
 1. `npm run dev-publish`
 1. open from finder once packaged
 1. open from mdp shell script once packaged
-1. `tail -f ~/Library/Logs/mdp/log.log`
+1. `npm run log`
+
+forge config now lives in `forge.config.js`
 
 upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-template.git`
 
@@ -31,4 +34,3 @@ upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-te
 env |grep GIT
 npm run publish
 ```
-

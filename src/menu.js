@@ -2,6 +2,13 @@ const { BrowserWindow, Menu, shell } = require('electron');
 const tmp = require('tmp');
 
 exports.setupMenu = function(app) {
+  const sendMenuAction = (action) => {
+    const window = BrowserWindow.getFocusedWindow();
+    if (window && !window.isDestroyed()) {
+      window.webContents.send('mdp:menu-action', { action });
+    }
+  };
+
   const template = [
     {
       label: 'Edit',
@@ -18,32 +25,29 @@ exports.setupMenu = function(app) {
           label: 'Edit Markdown',
           accelerator: 'CmdOrCtrl+e',
           click: () => {
-            BrowserWindow
-              .getFocusedWindow()
-              .webContents
-              .send('edit-file', 'edit the current markdown file');
+            sendMenuAction('edit-file');
           }
         },
         {
           label: 'Select Markdown Editor',
           click: () => {
-            BrowserWindow
-              .getFocusedWindow()
-              .webContents
-              .send('select-editor', 'Select a markdown editor');
+            sendMenuAction('select-editor');
           }
         },
         {
           label: 'Open as HTML',
           accelerator: 'CmdOrCtrl+k',
           click: () => {
+            const window = BrowserWindow.getFocusedWindow();
+
+            if (!window || window.isDestroyed()) {
+              return;
+            }
+
             const tmpFile = tmp.fileSync().name + '.html';
-            BrowserWindow
-              .getFocusedWindow()
-              .webContents
-              .savePage(tmpFile, 'HTMLComplete', () => {
-                shell.openPath(tmpFile);
-              });
+            window.webContents.savePage(tmpFile, 'HTMLComplete', () => {
+              shell.openPath(tmpFile);
+            });
           }
         },
         { type: 'separator'},
@@ -55,8 +59,9 @@ exports.setupMenu = function(app) {
           label: 'Back',
           accelerator: 'CmdOrCtrl+Left',
           click: () => {
-            if (BrowserWindow.getFocusedWindow().webContents.canGoBack()) {
-              BrowserWindow.getFocusedWindow().webContents.goBack();
+            const window = BrowserWindow.getFocusedWindow();
+            if (window && window.webContents.canGoBack()) {
+              window.webContents.goBack();
             }
           }
         },
@@ -64,8 +69,9 @@ exports.setupMenu = function(app) {
           label: 'Forward',
           accelerator: 'CmdOrCtrl+Right',
           click: () => {
-            if (BrowserWindow.getFocusedWindow().webContents.canGoForward()) {
-              BrowserWindow.getFocusedWindow().webContents.goForward();
+            const window = BrowserWindow.getFocusedWindow();
+            if (window && window.webContents.canGoForward()) {
+              window.webContents.goForward();
             }
           }
         },

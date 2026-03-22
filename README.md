@@ -1,7 +1,7 @@
 <img src="https://electronjs.org/app-img/mdp/mdp-icon-128.png">
 
 # mdp
-<b>m</b>ark<b>d</b>own <b>p</b>review using marked, highlight.js, mermaid, node-emoji and live reload
+<b>m</b>ark<b>d</b>own <b>p</b>review for local files using Electron, marked, highlight.js, mermaid, node-emoji, and automatic file watching.
 
 
 [https://ericlink.github.io/mdp/](https://ericlink.github.io/mdp/)
@@ -46,15 +46,26 @@ full screen support
 
 dark mode window
 
+### architecture
+
+isolated renderer with a preload bridge
+
+markdown links between local `.md` files stay inside the preview
+
+external links open in your default browser
+
 ### command line
 
 put `mdp.app/Contents/Resources/app/package/mdp` script in your path
 
 ### logs
 
-on Linux - `~/.config/<app name>/log.log`
+unexpected main-process failures are written to `/tmp/mdp-main.log`
 
-on macOS - `~/Library/Logs/<app name>/log.log`
+### development
 
-on Windows - `%USERPROFILE%\AppData\Roaming\<app name>\log.log`
+`npm install`
 
+`npm run dev`
+
+`npm run dev-readme`

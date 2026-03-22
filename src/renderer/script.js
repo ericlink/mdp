@@ -1,391 +1,589 @@
-const { ipcRenderer, shell } = require('electron');
-const fs = require('fs');
+const appApi = window.mdp;
 
-const rendererTraceEnabled = process.env.MDP_TRACE_RENDER === '1';
-const rendererTracePath = '/tmp/mdp-renderer-debug.log';
+if (!appApi) {
+  throw new Error('Preload bridge is unavailable. Check BrowserWindow preload setup.');
+}
 
-const summarizeDomTarget = (target) => {
-  if (!target || !target.tagName) {
-    return target;
-  }
-
-  const summary = { tagName: target.tagName };
-
-  if (target.id) {
-    summary.id = target.id;
-  }
-
-  if (target.className && typeof target.className === 'string') {
-    summary.className = target.className;
-  }
-
-  if (target.src) {
-    summary.src = target.src;
-  }
-
-  if (target.href) {
-    summary.href = target.href;
-  }
-
-  return summary;
+const markdownContainer = document.querySelector('.md');
+const markdownFilePattern = /\.(md|markdown|mdown|mkdn|mkd|mdtxt)$/i;
+const assetLoaders = new Map();
+const state = {
+  currentFile: null,
+  currentFileUrl: null,
+  markedApi: null,
+  mermaidApi: null,
+  markedConfigured: false,
+  mermaidConfigured: false,
+  renderToken: 0
 };
 
-const sanitizeConsoleArg = (value) => {
-  if (value instanceof Error) {
-    return value.stack || `${value.name}: ${value.message}`;
+const createStateCard = (title, message, details) => {
+  const wrapper = document.createElement('section');
+  wrapper.className = 'state-card';
+
+  const heading = document.createElement('h1');
+  heading.textContent = title;
+  wrapper.appendChild(heading);
+
+  if (message) {
+    const paragraph = document.createElement('p');
+    paragraph.textContent = message;
+    wrapper.appendChild(paragraph);
   }
 
-  if (typeof DOMException !== 'undefined' && value instanceof DOMException) {
-    return `${value.name}: ${value.message}`;
+  if (details) {
+    const pre = document.createElement('pre');
+    pre.textContent = details;
+    wrapper.appendChild(pre);
   }
 
-  if (typeof Event !== 'undefined' && value instanceof Event) {
-    return {
-      type: value.type,
-      target: summarizeDomTarget(value.target)
-    };
-  }
-
-  if (typeof Node !== 'undefined' && value instanceof Node) {
-    return summarizeDomTarget(value);
-  }
-
-  if (typeof value === 'function') {
-    return value.toString();
-  }
-
-  if (typeof value === 'object' && value !== null) {
-    try {
-      return JSON.parse(JSON.stringify(value));
-    } catch (error) {
-      return Object.prototype.toString.call(value);
-    }
-  }
-
-  return value;
+  return wrapper;
 };
 
-['log', 'info', 'warn', 'error', 'debug'].forEach((method) => {
-  const original = console[method].bind(console);
-
-  console[method] = (...args) => {
-    original(...args.map(sanitizeConsoleArg));
-  };
-});
-
-const traceRenderer = (...args) => {
-  if (!rendererTraceEnabled) {
-    return;
-  }
-
-  const parts = args.map((value) => {
-    if (value instanceof Error) {
-      return value.stack || `${value.name}: ${value.message}`;
-    }
-
-    if (typeof value === 'object' && value !== null) {
-      try {
-        return JSON.stringify(value);
-      } catch (error) {
-        return Object.prototype.toString.call(value);
-      }
-    }
-
-    return String(value);
-  });
-
-  fs.appendFileSync(rendererTracePath, `[renderer] ${parts.join(' ')}\n`);
+const showStateCard = (title, message, details) => {
+  markdownContainer.replaceChildren(createStateCard(title, message, details));
 };
 
-const safeRequire = (moduleName, fallback) => {
-  try {
-    const loaded = require(moduleName);
-    traceRenderer('require:ok', moduleName);
-    return loaded;
-  } catch (error) {
-    traceRenderer('require:failed', moduleName, error);
-    return fallback;
-  }
-};
-
-const chokidar = safeRequire('chokidar', null);
-const emoji = safeRequire('node-emoji', { emojify: (value) => value });
-const hljs = safeRequire('highlight.js', null);
-const marked = safeRequire('marked', null);
-const mermaid = safeRequire('mermaid', null);
-
-const logError = (...args) => {
-  traceRenderer('logError', ...args);
-  console.error(...args);
-};
-
-const formatErrorForLog = (value) => {
-  if (!value) {
-    return 'Unknown renderer error';
-  }
-
-  if (value instanceof Error) {
-    return value.stack || `${value.name}: ${value.message}`;
-  }
-
-  if (typeof DOMException !== 'undefined' && value instanceof DOMException) {
-    return `${value.name}: ${value.message}`;
-  }
-
-  if (typeof value === 'object') {
-    const summary = {};
-    ['name', 'message', 'type', 'filename', 'lineno', 'colno'].forEach((key) => {
-      if (value[key] !== undefined && value[key] !== null) {
-        summary[key] = value[key];
-      }
-    });
-
-    const target = value.target;
-    if (target && target.tagName) {
-      summary.target = target.tagName;
-      if (target.src) {
-        summary.src = target.src;
-      }
-      if (target.href) {
-        summary.href = target.href;
-      }
-    }
-
-    try {
-      return JSON.stringify(summary);
-    } catch (err) {
-      return Object.prototype.toString.call(value);
-    }
-  }
-
-  return String(value);
-};
-
-window.addEventListener('error', (event) => {
-  event.preventDefault();
-  const details = event.error || {
-    type: event.type,
-    message: event.message,
-    filename: event.filename,
-    lineno: event.lineno,
-    colno: event.colno,
-    target: event.target
-  };
-  traceRenderer('window.error', formatErrorForLog(details));
-  logError(formatErrorForLog(details));
-});
-
-window.addEventListener('unhandledrejection', (event) => {
-  event.preventDefault();
-  traceRenderer('window.unhandledrejection', formatErrorForLog(event.reason));
-  logError(formatErrorForLog(event.reason));
-});
-
-const editorStorageKey = 'editor';
-let currentFile = null;
-
-const renderPlainText = (content) => {
-  const container = document.querySelector('.md');
-
-  if (!container) {
-    logError('missing .md container');
-    return;
-  }
-
-  const pre = document.createElement('pre');
-  pre.textContent = content;
-  pre.style.whiteSpace = 'pre-wrap';
-  pre.style.wordBreak = 'break-word';
-  container.replaceChildren(pre);
-};
-
-const readFile = (file) => {
-  traceRenderer('readFile:start', file);
-  fs.readFile(file, (err, data) => {
-    if (err) {
-      logError('readFile', err);
-      return;
-    }
-    if (!data || data.length == 0) return;
-    traceRenderer('readFile:loaded', { bytes: data.length });
-
-    if (!marked) {
-      traceRenderer('readFile:plain-text-fallback');
-      renderPlainText(data.toString());
-      return;
-    }
-
-    // emojify
-    const emojified = emoji.emojify(data.toString());
-    // marked
-    try {
-      traceRenderer('readFile:marked:start');
-      document.querySelector('.md').innerHTML = marked(emojified);
-      traceRenderer('readFile:marked:done');
-    } catch (error) {
-      logError('marked render failed', error);
-      renderPlainText(data.toString());
-      return;
-    }
-    // highlight.js - here is cleaner than marked function, to avoid mermaid
-    if (hljs) {
-      traceRenderer('readFile:highlight:start');
-      Array.from(document.querySelectorAll('pre code:not(.language-mermaid)')).forEach(
-        block => hljs.highlightBlock(block)
-      );
-      traceRenderer('readFile:highlight:done');
-    }
-    // mermaid
-    if (mermaid) {
-      traceRenderer('readFile:mermaid:start');
-      Array.from(document.querySelectorAll('pre code.language-mermaid')).forEach(
-        block => mermaid.init(undefined, block)
-      );
-      traceRenderer('readFile:mermaid:done');
-    }
-  });
-};
-
-const initMermaid = () => {
-  if (!mermaid) {
-    traceRenderer('initMermaid:skipped');
-    return;
-  }
-
-  traceRenderer('initMermaid:start');
-  var mermaidConfig = {
-    startOnLoad:false,
-    theme: 'neutral',
-    sequence:{
-      useMaxWidth:false,
-      htmlLabels:true
-    },
-    flowchart:{
-      useMaxWidth:false,
-      htmlLabels:true
-    }
-  };
-  mermaid.initialize(mermaidConfig);
-  traceRenderer('initMermaid:done');
-};
-
-const getFileObj = async () => {
-  traceRenderer('getFileObj:start', window.location.search);
+const getFilePathFromLocation = () => {
   const params = new URLSearchParams(window.location.search);
-  const name = params.get('name');
-  const basePath = params.get('path');
+  return params.get('file');
+};
 
-  if (name && basePath) {
-    traceRenderer('getFileObj:resolved', { name, path: basePath });
-    return { name, path: basePath };
+const getBaseFileUrl = () => {
+  return state.currentFileUrl || window.location.href;
+};
+
+const updateHistory = (filePath, mode) => {
+  if (!mode) {
+    return;
   }
 
-  traceRenderer('getFileObj:fallback-ipc');
-  const fileState = await ipcRenderer.invoke('consume-file');
-
-  if (fileState && fileState.name && fileState.path) {
-    traceRenderer('getFileObj:resolved-ipc', fileState);
-    return fileState;
+  const currentLocationFile = getFilePathFromLocation();
+  if (currentLocationFile === filePath && mode === 'push') {
+    return;
   }
 
-  traceRenderer('getFileObj:missing');
-  window.close();
+  const url = new URL(window.location.href);
+  url.searchParams.set('file', filePath);
+  window.history[mode === 'push' ? 'pushState' : 'replaceState']({ filePath }, '', url);
+};
+
+const getFileName = (filePath) => {
+  const parts = filePath.split(/[\\/]/);
+  return parts[parts.length - 1] || filePath;
+};
+
+const getCodeLanguage = (codeBlock) => {
+  for (const className of codeBlock.classList) {
+    if (className.startsWith('language-')) {
+      return className.slice('language-'.length);
+    }
+
+    if (className.startsWith('lang-')) {
+      return className.slice('lang-'.length);
+    }
+  }
+
   return null;
 };
 
-const watchFile = (file) => {
-  if (!chokidar) {
-    traceRenderer('watchFile:skipped');
+const isMarkdownFile = (filePath) => {
+  return markdownFilePattern.test(filePath || '');
+};
+
+const isUnsafeUrl = (value) => {
+  return /^javascript:/i.test(value) || /^vbscript:/i.test(value);
+};
+
+const resolveMarkdownHref = (value) => {
+  if (!value || value.startsWith('#')) {
+    return value;
+  }
+
+  try {
+    return new URL(value, getBaseFileUrl()).toString();
+  } catch (error) {
+    return value;
+  }
+};
+
+const sanitizeRenderedContent = (root) => {
+  root.querySelectorAll('script, iframe, object, embed, link[rel="import"], meta[http-equiv="refresh"]').forEach((node) => {
+    node.remove();
+  });
+
+  root.querySelectorAll('*').forEach((element) => {
+    Array.from(element.attributes).forEach((attribute) => {
+      const name = attribute.name.toLowerCase();
+      const value = attribute.value.trim();
+
+      if (name.startsWith('on')) {
+        element.removeAttribute(attribute.name);
+        return;
+      }
+
+      if ((name === 'href' || name === 'src') && isUnsafeUrl(value)) {
+        element.removeAttribute(attribute.name);
+        return;
+      }
+
+      if (name === 'href' && /^data:/i.test(value)) {
+        element.removeAttribute(attribute.name);
+      }
+    });
+  });
+};
+
+const rewriteRelativeResources = (root) => {
+  root.querySelectorAll('a[href]').forEach((link) => {
+    const href = link.getAttribute('href');
+
+    if (!href || href.startsWith('#') || isUnsafeUrl(href)) {
+      return;
+    }
+
+    const resolvedHref = resolveMarkdownHref(href);
+    link.setAttribute('href', resolvedHref);
+
+    if (/^(https?:|mailto:)/i.test(resolvedHref)) {
+      link.rel = 'noopener noreferrer';
+    }
+  });
+
+  root.querySelectorAll('img[src], source[src]').forEach((element) => {
+    const src = element.getAttribute('src');
+
+    if (!src || isUnsafeUrl(src)) {
+      return;
+    }
+
+    element.setAttribute('src', resolveMarkdownHref(src));
+  });
+};
+
+const loadAsset = (asset) => {
+  if (!asset) {
+    return Promise.resolve(null);
+  }
+
+  if (assetLoaders.has(asset.url)) {
+    return assetLoaders.get(asset.url);
+  }
+
+  let loader;
+
+  if (asset.type === 'module') {
+    loader = import(asset.url);
+  } else if (asset.type === 'style') {
+    loader = new Promise((resolve, reject) => {
+      const existing = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+        .find((element) => element.dataset.mdpAssetUrl === asset.url);
+
+      if (existing) {
+        resolve(existing);
+        return;
+      }
+
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = asset.url;
+      link.dataset.mdpAssetUrl = asset.url;
+      link.onload = () => resolve(link);
+      link.onerror = () => reject(new Error(`Failed to load ${asset.url}`));
+      document.head.appendChild(link);
+    });
+  } else {
+    loader = new Promise((resolve, reject) => {
+      const existing = Array.from(document.querySelectorAll('script'))
+        .find((element) => element.dataset.mdpAssetUrl === asset.url);
+
+      if (existing) {
+        resolve(existing);
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = asset.url;
+      script.dataset.mdpAssetUrl = asset.url;
+      script.onload = () => resolve(script);
+      script.onerror = () => reject(new Error(`Failed to load ${asset.url}`));
+      document.head.appendChild(script);
+    });
+  }
+
+  assetLoaders.set(asset.url, loader);
+  return loader;
+};
+
+const resolveMarkedApi = async () => {
+  if (state.markedApi) {
+    return state.markedApi;
+  }
+
+  const asset = appApi.assets?.marked;
+  if (!asset) {
+    return null;
+  }
+
+  const loaded = await loadAsset(asset);
+  const candidates = [
+    loaded?.marked,
+    loaded?.default,
+    loaded,
+    window.marked
+  ];
+
+  state.markedApi = candidates.find((candidate) => {
+    return candidate && (typeof candidate === 'function' || typeof candidate.parse === 'function');
+  }) || null;
+
+  if (state.markedApi && !state.markedConfigured) {
+    const options = {
+      breaks: true,
+      gfm: true
+    };
+
+    if (typeof state.markedApi.setOptions === 'function') {
+      state.markedApi.setOptions(options);
+    } else if (typeof state.markedApi.use === 'function') {
+      state.markedApi.use(options);
+    }
+
+    state.markedConfigured = true;
+  }
+
+  return state.markedApi;
+};
+
+const resolveMermaidApi = async () => {
+  if (state.mermaidApi) {
+    return state.mermaidApi;
+  }
+
+  const asset = appApi.assets?.mermaid;
+  if (!asset) {
+    return null;
+  }
+
+  const loaded = await loadAsset(asset);
+  const candidates = [
+    loaded?.default,
+    loaded?.mermaid,
+    loaded,
+    window.mermaid
+  ];
+
+  state.mermaidApi = candidates.find((candidate) => {
+    return candidate && (typeof candidate.run === 'function' || typeof candidate.init === 'function');
+  }) || null;
+
+  if (state.mermaidApi && !state.mermaidConfigured && typeof state.mermaidApi.initialize === 'function') {
+    state.mermaidApi.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: 'neutral',
+      flowchart: {
+        useMaxWidth: false,
+        htmlLabels: true
+      },
+      sequence: {
+        useMaxWidth: false,
+        htmlLabels: true
+      }
+    });
+    state.mermaidConfigured = true;
+  }
+
+  return state.mermaidApi;
+};
+
+const highlightCodeBlocks = (root) => {
+  root.querySelectorAll('pre > code').forEach((codeBlock) => {
+    const language = getCodeLanguage(codeBlock);
+
+    if (language === 'mermaid') {
+      return;
+    }
+
+    const result = appApi.highlightCode(codeBlock.textContent || '', language);
+    if (!result || !result.html) {
+      return;
+    }
+
+    codeBlock.innerHTML = result.html;
+    codeBlock.classList.add('hljs');
+
+    if (result.language) {
+      codeBlock.classList.add(`language-${result.language}`);
+    }
+  });
+};
+
+const renderMermaidBlocks = async (root) => {
+  const mermaid = await resolveMermaidApi();
+  if (!mermaid) {
     return;
   }
 
-  traceRenderer('watchFile:start', file);
-  const watcher = chokidar.watch(file, { ignored: /[\/\\]\./, persistent: true });
+  const blocks = Array.from(root.querySelectorAll('pre > code.language-mermaid, pre > code.lang-mermaid'))
+    .map((codeBlock) => {
+      const source = codeBlock.textContent || '';
+      const wrapper = document.createElement('div');
+      wrapper.className = 'mermaid-block';
 
-  watcher.on('change', (file) => {
-    traceRenderer('watchFile:change', file);
-    readFile(file);
-  });
+      const diagram = document.createElement('div');
+      diagram.className = 'mermaid';
+      diagram.textContent = source;
+
+      wrapper.appendChild(diagram);
+      codeBlock.closest('pre').replaceWith(wrapper);
+
+      return {
+        source,
+        wrapper,
+        diagram
+      };
+    });
+
+  if (blocks.length === 0) {
+    return;
+  }
+
+  try {
+    const nodes = blocks.map((block) => block.diagram);
+
+    if (typeof mermaid.run === 'function') {
+      await mermaid.run({ nodes });
+      return;
+    }
+
+    if (typeof mermaid.init === 'function') {
+      mermaid.init(undefined, nodes);
+    }
+  } catch (error) {
+    console.error(error);
+    blocks.forEach((block) => {
+      const pre = document.createElement('pre');
+      const code = document.createElement('code');
+      code.className = 'language-mermaid';
+      code.textContent = block.source;
+      pre.appendChild(code);
+      block.wrapper.replaceWith(pre);
+    });
+  }
 };
 
-// edit current markdown file
-ipcRenderer.on('edit-file', async () => {
-  const editor = window.localStorage.getItem(editorStorageKey);
+const parseMarkdown = async (content) => {
+  const markedApi = await resolveMarkedApi();
 
-  if (editor) {
-    editFile(editor);
-  } else {
-    const files = await selectEditor();
-    if (files.length > 0) {
-      editFile(files[0]);
+  if (!markedApi) {
+    return null;
+  }
+
+  if (typeof markedApi.parse === 'function') {
+    return markedApi.parse(content);
+  }
+
+  if (typeof markedApi === 'function') {
+    return markedApi(content);
+  }
+
+  return null;
+};
+
+const renderPlainText = (content) => {
+  const pre = document.createElement('pre');
+  pre.textContent = content;
+  markdownContainer.replaceChildren(pre);
+};
+
+const renderFile = async (filePath, { historyMode = 'replace' } = {}) => {
+  if (!filePath) {
+    showStateCard('No file selected', 'Launch mdp with a markdown file to preview.');
+    return;
+  }
+
+  const renderToken = ++state.renderToken;
+  state.currentFile = filePath;
+  state.currentFileUrl = appApi.toFileUrl(filePath);
+  document.title = `${getFileName(filePath)} · mdp`;
+  updateHistory(filePath, historyMode);
+
+  let rawContent = '';
+
+  try {
+    rawContent = await appApi.readFile(filePath);
+    if (renderToken !== state.renderToken) {
+      return;
+    }
+
+    const emojified = appApi.emojify(rawContent);
+    const renderedHtml = await parseMarkdown(emojified);
+
+    if (renderToken !== state.renderToken) {
+      return;
+    }
+
+    if (!renderedHtml) {
+      renderPlainText(rawContent);
+      return;
+    }
+
+    markdownContainer.innerHTML = renderedHtml;
+    sanitizeRenderedContent(markdownContainer);
+    rewriteRelativeResources(markdownContainer);
+    highlightCodeBlocks(markdownContainer);
+    await renderMermaidBlocks(markdownContainer);
+  } catch (error) {
+    console.error(error);
+    showStateCard('Unable to render file', error.message || 'An unexpected error occurred.', rawContent || null);
+  } finally {
+    if (renderToken === state.renderToken) {
+      try {
+        await appApi.watchFile(filePath);
+      } catch (error) {
+        console.error(error);
+      }
     }
   }
-});
-
-ipcRenderer.on('select-editor', async () => {
-  await selectEditor();
-});
-
-const selectEditor = async () => {
-  traceRenderer('selectEditor:invoke');
-  const files = await ipcRenderer.invoke('select-editor');
-
-  if (files.length > 0) {
-    window.localStorage.setItem(editorStorageKey, files[0]);
-  }
-
-  return files;
 };
 
-const editFile = (editorPath) => {
-  const child = require('child_process').execFile;
+const selectEditorPath = async () => {
+  const files = await appApi.selectEditor();
 
-  child(editorPath, [currentFile], (err) => {
-    if (err) logError(err);
+  if (files.length === 0) {
+    return null;
+  }
+
+  return appApi.setEditorPath(files[0]);
+};
+
+const editCurrentFile = async () => {
+  if (!state.currentFile) {
+    return;
+  }
+
+  let editorPath = await appApi.getEditorPath();
+  if (!editorPath) {
+    editorPath = await selectEditorPath();
+  }
+
+  if (!editorPath) {
+    return;
+  }
+
+  try {
+    await appApi.launchEditor(editorPath, state.currentFile);
+  } catch (error) {
+    console.error(error);
+    showStateCard('Unable to open editor', error.message || 'The configured editor could not be launched.');
+  }
+};
+
+const handleLinkClick = async (event) => {
+  const link = event.target.closest('a[href]');
+  if (!link) {
+    return;
+  }
+
+  const href = link.getAttribute('href');
+  if (!href || href.startsWith('#')) {
+    return;
+  }
+
+  let resolvedUrl;
+
+  try {
+    resolvedUrl = new URL(href, getBaseFileUrl());
+  } catch (error) {
+    return;
+  }
+
+  if (['http:', 'https:', 'mailto:'].includes(resolvedUrl.protocol)) {
+    event.preventDefault();
+    await appApi.openExternal(resolvedUrl.toString());
+    return;
+  }
+
+  if (resolvedUrl.protocol !== 'file:') {
+    return;
+  }
+
+  const nextFilePath = appApi.fromFileUrl(resolvedUrl.toString());
+
+  if (isMarkdownFile(nextFilePath)) {
+    event.preventDefault();
+    await renderFile(nextFilePath, { historyMode: 'push' });
+    window.scrollTo({ top: 0, left: 0 });
+    return;
+  }
+
+  event.preventDefault();
+  await appApi.openPath(resolvedUrl.toString());
+};
+
+const initMenuActions = () => {
+  appApi.onMenuAction(async ({ action }) => {
+    if (action === 'edit-file') {
+      await editCurrentFile();
+      return;
+    }
+
+    if (action === 'select-editor') {
+      await selectEditorPath();
+    }
   });
 };
 
-// open all links in external browser
-document.addEventListener('click', (event) => {
-  if (event.target.tagName === 'A' && event.target.href.startsWith('http')) {
-    event.preventDefault();
-    shell.openExternal(event.target.href);
-  }
-});
+const initFileWatching = () => {
+  appApi.onFileChanged(async ({ filePath }) => {
+    if (filePath !== state.currentFile) {
+      return;
+    }
 
-const initMarked = (path) => {
-  marked.setOptions({
-    baseUrl: path,
-    breaks: true,
-    gfm: true,
-    pedantic: false,
-    renderer: new marked.Renderer(),
-    sanitize: false,
-    smartLists: true,
-    smartypants: false,
-    tables: true,
-    xhtml: false
+    await renderFile(filePath, { historyMode: null });
+  });
+};
+
+const resolveInitialFilePath = async () => {
+  const locationFile = getFilePathFromLocation();
+  if (locationFile) {
+    return locationFile;
+  }
+
+  const fileState = await appApi.consumeFile();
+  return fileState?.filePath || fileState?.name || null;
+};
+
+const initHistory = () => {
+  window.addEventListener('popstate', async (event) => {
+    const nextFilePath = event.state?.filePath || getFilePathFromLocation();
+    if (!nextFilePath || nextFilePath === state.currentFile) {
+      return;
+    }
+
+    await renderFile(nextFilePath, { historyMode: null });
   });
 };
 
 const init = async () => {
-  traceRenderer('init:start');
-  const fileObj = await getFileObj();
+  document.addEventListener('click', (event) => {
+    void handleLinkClick(event);
+  });
 
-  if (!fileObj) {
-    traceRenderer('init:no-file');
-    return;
-  }
+  window.addEventListener('beforeunload', () => {
+    void appApi.unwatchFile();
+  });
 
-  currentFile = fileObj.name;
-  traceRenderer('init:currentFile', currentFile);
-  initMarked(fileObj.path);
-  initMermaid();
-  readFile(currentFile);
-  watchFile(currentFile);
-  traceRenderer('init:done');
+  initMenuActions();
+  initFileWatching();
+  initHistory();
+
+  const filePath = await resolveInitialFilePath();
+  await renderFile(filePath, { historyMode: 'replace' });
 };
 
 init().catch((error) => {
-  logError(formatErrorForLog(error));
+  console.error(error);
+  showStateCard('Renderer failed to start', error.message || 'An unexpected startup error occurred.');
 });

@@ -1,22 +1,30 @@
-const { app, BrowserWindow, dialog, ipcMain } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
+const { execFile } = require('child_process');
 const fs = require('fs');
-const menu   = require('./menu.js');
+const menu = require('./menu.js');
 const path = require('path');
-const { pathToFileURL } = require('url');
+const { fileURLToPath, pathToFileURL } = require('url');
 const windowStateKeeper = require('electron-window-state');
 
 const appRoot = path.resolve(__dirname, '..');
-const mainTracePath = '/tmp/mdp-main.log';
+const preloadPath = path.join(__dirname, 'preload.js');
+const rendererHtmlPath = path.join(__dirname, 'renderer', 'index.html');
+const rendererUrl = pathToFileURL(rendererHtmlPath);
+const mainLogPath = '/tmp/mdp-main.log';
 const windows = new Set();
 const pendingFilesByWebContentsId = new Map();
+const watchersByWebContentsId = new Map();
+let settingsCache = null;
+let pendingOpenFilePath = null;
+let lastOpenedFilePath = null;
 
-const debugBoot = (...args) => {
-  if (process.env.MDP_DEBUG_BOOT === '1') {
-    fs.appendFileSync('/tmp/mdp-debug.log', `[mdp debug] ${JSON.stringify(args)}\n`);
-  }
-};
+try {
+  fs.writeFileSync(mainLogPath, '');
+} catch (error) {
+  console.error(error);
+}
 
-const formatMainLogValue = (value) => {
+const formatLogValue = (value) => {
   if (value instanceof Error) {
     return value.stack || `${value.name}: ${value.message}`;
   }
@@ -32,79 +40,84 @@ const formatMainLogValue = (value) => {
   return String(value);
 };
 
-const writeMainLog = (level, ...args) => {
-  const text = args.map(formatMainLogValue).join(' ');
-
-  if (level === 'error') {
-    console.error(text);
-  } else {
-    console.log(text);
-  }
-
-  fs.appendFileSync(mainTracePath, `[${level}] ${text}\n`);
+const writeMainLog = (...args) => {
+  const text = args.map(formatLogValue).join(' ');
+  fs.appendFileSync(mainLogPath, `${text}\n`);
 };
 
 process.on('uncaughtException', (error) => {
-  writeMainLog('error', 'uncaughtException', error);
+  console.error(error);
+  writeMainLog('uncaughtException', error);
 });
 
 process.on('unhandledRejection', (reason) => {
-  writeMainLog('error', 'unhandledRejection', reason);
+  console.error(reason);
+  writeMainLog('unhandledRejection', reason);
 });
 
-const resolveAppFilePath = (file) => {
-  if (!file) {
+const normalizeFileState = (filePath) => {
+  const absoluteFilePath = resolveFilePath(filePath);
+
+  return {
+    name: absoluteFilePath,
+    path: `${path.dirname(absoluteFilePath)}${path.sep}`,
+    filePath: absoluteFilePath,
+    fileUrl: pathToFileURL(absoluteFilePath).toString()
+  };
+};
+
+const resolveFilePath = (filePath) => {
+  if (!filePath) {
     return null;
   }
 
-  if (path.isAbsolute(file)) {
-    return file;
+  if (path.isAbsolute(filePath)) {
+    return filePath;
   }
 
-  const cwdResolved = path.resolve(process.cwd(), file);
+  const cwdResolved = path.resolve(process.cwd(), filePath);
   if (fs.existsSync(cwdResolved)) {
     return cwdResolved;
   }
 
-  return path.resolve(appRoot, file);
+  return path.resolve(appRoot, filePath);
 };
 
-const normalizeFileState = (file) => {
-  const absoluteFile = resolveAppFilePath(file);
-
-  return {
-    name: absoluteFile,
-    path: path.dirname(absoluteFile) + path.sep
-  };
-};
-
-const setGlobalFile = (file) => {
-  global.file = normalizeFileState(file);
-};
-
-const resolveFileArg = (candidate) => {
-  if (!candidate || candidate.startsWith('-')) {
-    return null;
-  }
-
-  const absoluteCandidate = resolveAppFilePath(candidate);
-
-  if (absoluteCandidate === path.resolve(__filename)) {
+const resolveFileUrlPath = (fileUrl) => {
+  if (!fileUrl) {
     return null;
   }
 
   try {
-    const stats = fs.statSync(absoluteCandidate);
-    return stats.isFile() ? candidate : null;
+    return fileURLToPath(fileUrl);
   } catch (error) {
     return null;
   }
 };
 
-const getFileArg = (argv = []) => {
+const resolveStartupFileArg = (candidate) => {
+  if (!candidate || candidate.startsWith('-')) {
+    return null;
+  }
+
+  const resolvedFilePath = resolveFilePath(candidate);
+
+  if (resolvedFilePath === path.resolve(__filename)) {
+    return null;
+  }
+
+  try {
+    const stats = fs.statSync(resolvedFilePath);
+    return stats.isFile() ? resolvedFilePath : null;
+  } catch (error) {
+    return null;
+  }
+};
+
+const getStartupFilePath = (argv = []) => {
   const candidateArgs = (app.isPackaged ? argv.slice(1) : argv.slice(2))
     .filter((arg) => arg && !arg.startsWith('-psn'))
-    .map(resolveFileArg)
+    .map(resolveStartupFileArg)
     .filter(Boolean);
 
   if (candidateArgs.length > 0) {
@@ -112,79 +125,205 @@ const getFileArg = (argv = []) => {
   }
 
   if (process.env.MDP_DEFAULT_FILE) {
-    return process.env.MDP_DEFAULT_FILE;
+    return resolveStartupFileArg(process.env.MDP_DEFAULT_FILE);
   }
 
   switch (process.env.npm_lifecycle_event) {
     case 'dev-readme':
-      return 'README.md';
+      return path.join(appRoot, 'README.md');
     case 'dev':
     case 'start':
-      return 'assets/example.md';
+      return path.join(appRoot, 'assets', 'example.md');
     default:
       return null;
   }
 };
 
-const processArgs = (argv) => {
-  const file = getFileArg(argv);
-  debugBoot('processArgs', { argv, file, defaultFile: process.env.MDP_DEFAULT_FILE || null });
+const getSettingsFilePath = () => {
+  return path.join(app.getPath('userData'), 'settings.json');
+};
 
-  if (file) {
-    setGlobalFile(file);
+const loadSettings = () => {
+  if (settingsCache) {
+    return settingsCache;
+  }
+
+  try {
+    const contents = fs.readFileSync(getSettingsFilePath(), 'utf8');
+    settingsCache = JSON.parse(contents);
+  } catch (error) {
+    settingsCache = {};
+  }
+
+  return settingsCache;
+};
+
+const saveSettings = (nextSettings) => {
+  const filePath = getSettingsFilePath();
+  const mergedSettings = { ...loadSettings(), ...nextSettings };
+
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify(mergedSettings, null, 2));
+  settingsCache = mergedSettings;
+
+  return mergedSettings;
+};
+
+const isRendererEntryUrl = (value) => {
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === rendererUrl.protocol && parsed.pathname === rendererUrl.pathname;
+  } catch (error) {
+    return false;
   }
 };
 
-const createMainWindow = () => {
-  debugBoot('createMainWindow', { file: global.file || null });
-  if (!global.file) return;
+const isTrustedIpcSender = (event) => {
+  const senderUrl = event.senderFrame?.url || event.sender.getURL();
+  return isRendererEntryUrl(senderUrl);
+};
 
-  const mainWindowState = windowStateKeeper({ defaultWidth: 1000, defaultHeight: 800 });
-  const fileState = global.file;
-  global.file = null;
+const ensureTrustedIpcSender = (event) => {
+  if (!isTrustedIpcSender(event)) {
+    throw new Error('Untrusted IPC sender');
+  }
+};
+
+const cleanupFileWatcher = (webContentsId) => {
+  const watcher = watchersByWebContentsId.get(webContentsId);
+  if (!watcher) {
+    return;
+  }
+
+  fs.unwatchFile(watcher.filePath, watcher.listener);
+  watchersByWebContentsId.delete(webContentsId);
+};
+
+const createMainWindow = (fileState) => {
+  if (!fileState) {
+    return null;
+  }
+
+  const mainWindowState = windowStateKeeper({
+    defaultWidth: 1000,
+    defaultHeight: 800
+  });
 
   const window = new BrowserWindow({
-    show: true,
+    show: false,
     title: 'mdp',
     x: mainWindowState.x,
     y: mainWindowState.y,
     width: mainWindowState.width,
     height: mainWindowState.height,
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-      partition: 'persist:main',
-      webSecurity: false,
-      allowRunningInsecureContent: true
+      preload: preloadPath,
+      contextIsolation: true,
+      nodeIntegration: false,
+      // The preload currently uses Node-backed packages, so Electron's
+      // default renderer sandbox would block it from initializing.
+      sandbox: false,
+      webSecurity: true
     }
   });
 
+  const webContents = window.webContents;
+  const webContentsId = webContents.id;
   windows.add(window);
-  pendingFilesByWebContentsId.set(window.webContents.id, fileState);
+  pendingFilesByWebContentsId.set(webContentsId, fileState);
   mainWindowState.manage(window);
-  const rendererUrl = pathToFileURL(path.join(__dirname, 'renderer', 'index.html'));
-  rendererUrl.searchParams.set('name', fileState.name);
-  rendererUrl.searchParams.set('path', fileState.path);
 
-  window.loadURL(rendererUrl.toString());
-  window.once('ready-to-show', () => { window.show(); });
-  window.webContents.once('did-finish-load', () => {
-    window.show();
-    debugBoot('did-finish-load', { url: window.webContents.getURL() });
+  window.loadFile(rendererHtmlPath).catch((error) => {
+    console.error(error);
+    writeMainLog('loadFile', error);
   });
-  window.webContents.on('did-fail-load', (event, code, description, validatedURL) => {
-    writeMainLog('error', 'did-fail-load', { code, description, validatedURL });
+  window.once('ready-to-show', () => {
+    window.show();
   });
   window.on('closed', () => {
-    pendingFilesByWebContentsId.delete(window.webContents.id);
+    cleanupFileWatcher(webContentsId);
+    pendingFilesByWebContentsId.delete(webContentsId);
     windows.delete(window);
-    debugBoot('window closed');
+  });
+  webContents.on('render-process-gone', (_event, details) => {
+    writeMainLog('render-process-gone', details);
+  });
+  webContents.on('did-fail-load', (_event, code, description, validatedURL) => {
+    writeMainLog('did-fail-load', { code, description, validatedURL });
+  });
+
+  return window;
+};
+
+const openMarkdownFile = (filePath) => {
+  if (!filePath) {
+    return null;
+  }
+
+  const resolvedFilePath = resolveFilePath(filePath);
+
+  if (!app.isReady()) {
+    pendingOpenFilePath = resolvedFilePath;
+    return null;
+  }
+
+  lastOpenedFilePath = resolvedFilePath;
+  return createMainWindow(normalizeFileState(resolvedFilePath));
+};
+
+const isSafeExternalUrl = (value) => {
+  try {
+    const url = new URL(value);
+    return ['http:', 'https:', 'mailto:'].includes(url.protocol);
+  } catch (error) {
+    return false;
+  }
+};
+
+const openLocalPath = async (value) => {
+  if (!value) {
+    return false;
+  }
+
+  const resolvedFilePath = value.startsWith('file:')
+    ? resolveFileUrlPath(value)
+    : resolveFilePath(value);
+
+  if (!resolvedFilePath) {
+    return false;
+  }
+
+  const result = await shell.openPath(resolvedFilePath);
+  return result === '';
+};
+
+const launchEditor = ({ editorPath, filePath }) => {
+  const resolvedEditorPath = path.resolve(editorPath);
+  const resolvedFilePath = resolveFilePath(filePath);
+
+  return new Promise((resolve, reject) => {
+    const callback = (error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve(true);
+    };
+
+    if (process.platform === 'darwin') {
+      execFile('open', ['-a', resolvedEditorPath, resolvedFilePath], callback);
+      return;
+    }
+
+    execFile(resolvedEditorPath, [resolvedFilePath], callback);
   });
 };
 
-ipcMain.handle('consume-file', (event) => {
-  const fileState = pendingFilesByWebContentsId.get(event.sender.id) || null;
+ipcMain.handle('mdp:consume-file', (event) => {
+  ensureTrustedIpcSender(event);
 
+  const fileState = pendingFilesByWebContentsId.get(event.sender.id) || null;
   if (fileState) {
     pendingFilesByWebContentsId.delete(event.sender.id);
   }
@@ -192,42 +331,150 @@ ipcMain.handle('consume-file', (event) => {
   return fileState;
 });
 
-ipcMain.handle('select-editor', async (event) => {
+ipcMain.handle('mdp:read-file', async (event, filePath) => {
+  ensureTrustedIpcSender(event);
+
+  const resolvedFilePath = resolveFilePath(filePath);
+  return fs.promises.readFile(resolvedFilePath, 'utf8');
+});
+
+ipcMain.handle('mdp:watch-file', (event, filePath) => {
+  ensureTrustedIpcSender(event);
+
+  const webContentsId = event.sender.id;
+  const resolvedFilePath = resolveFilePath(filePath);
+  cleanupFileWatcher(webContentsId);
+
+  const listener = (current, previous) => {
+    if (current.mtimeMs === previous.mtimeMs && current.size === previous.size) {
+      return;
+    }
+
+    if (!event.sender.isDestroyed()) {
+      event.sender.send('mdp:file-changed', { filePath: resolvedFilePath });
+    }
+  };
+
+  fs.watchFile(resolvedFilePath, { interval: 300 }, listener);
+  watchersByWebContentsId.set(webContentsId, {
+    filePath: resolvedFilePath,
+    listener
+  });
+
+  return true;
+});
+
+ipcMain.handle('mdp:unwatch-file', (event) => {
+  ensureTrustedIpcSender(event);
+  cleanupFileWatcher(event.sender.id);
+  return true;
+});
+
+ipcMain.handle('mdp:select-editor', async (event) => {
+  ensureTrustedIpcSender(event);
+
   const window = BrowserWindow.fromWebContents(event.sender);
   const result = await dialog.showOpenDialog(window, {
-    properties: ['openFile'],
+    properties: process.platform === 'darwin' ? ['openFile', 'openDirectory'] : ['openFile'],
     message: 'Please select a markdown editor application'
   });
 
   return result.canceled ? [] : result.filePaths;
 });
 
+ipcMain.handle('mdp:get-editor-path', (event) => {
+  ensureTrustedIpcSender(event);
+  return loadSettings().editorPath || null;
+});
+
+ipcMain.handle('mdp:set-editor-path', (event, editorPath) => {
+  ensureTrustedIpcSender(event);
+
+  const resolvedEditorPath = path.resolve(editorPath);
+  saveSettings({ editorPath: resolvedEditorPath });
+  return resolvedEditorPath;
+});
+
+ipcMain.handle('mdp:launch-editor', async (event, payload) => {
+  ensureTrustedIpcSender(event);
+  return launchEditor(payload);
+});
+
+ipcMain.handle('mdp:open-path', async (event, value) => {
+  ensureTrustedIpcSender(event);
+  return openLocalPath(value);
+});
+
+ipcMain.handle('mdp:open-external', async (event, url) => {
+  ensureTrustedIpcSender(event);
+
+  if (!isSafeExternalUrl(url)) {
+    return false;
+  }
+
+  await shell.openExternal(url);
+  return true;
+});
+
 app.on('open-file', (event, filePath) => {
   event.preventDefault();
-  setGlobalFile(filePath);
-  createMainWindow();
+  openMarkdownFile(filePath);
+});
+
+app.on('web-contents-created', (_event, contents) => {
+  contents.setWindowOpenHandler(({ url }) => {
+    if (isSafeExternalUrl(url)) {
+      shell.openExternal(url);
+    }
+
+    return { action: 'deny' };
+  });
+
+  contents.on('will-navigate', (event, url) => {
+    if (!isRendererEntryUrl(url)) {
+      event.preventDefault();
+    }
+  });
 });
 
 const allowMultiInstance = process.env.MDP_ALLOW_MULTI_INSTANCE === '1';
 const hasSingleInstanceLock = allowMultiInstance || app.requestSingleInstanceLock();
 
 if (!hasSingleInstanceLock) {
-  // quit and let second-instance handler take it
   app.quit();
 } else {
-  // register these only on first instance that got the lock
   if (!allowMultiInstance) {
-    app.on('second-instance', (event, commandLine) => {
-      processArgs(commandLine);
-      createMainWindow();
+    app.on('second-instance', (_event, commandLine) => {
+      const filePath = getStartupFilePath(commandLine);
+
+      if (filePath) {
+        openMarkdownFile(filePath);
+        return;
+      }
+
+      const [window] = windows;
+      if (window && !window.isDestroyed()) {
+        if (window.isMinimized()) {
+          window.restore();
+        }
+
+        window.focus();
+      }
     });
   }
 
-  app.on('ready', () => {
-    debugBoot('app ready');
+  app.whenReady().then(() => {
+    writeMainLog('session-start', new Date().toISOString());
     menu.setupMenu(app);
-    processArgs(process.argv);
-    createMainWindow();
+    openMarkdownFile(pendingOpenFilePath || getStartupFilePath(process.argv));
+  });
+
+  app.on('activate', () => {
+    if (windows.size > 0) {
+      return;
+    }
+
+    openMarkdownFile(lastOpenedFilePath || getStartupFilePath(process.argv));
   });
 
   app.on('window-all-closed', () => {
@@ -235,42 +482,4 @@ if (!hasSingleInstanceLock) {
       app.quit();
     }
   });
-
 }
-
-
-/** poc questions holding zone **/
-/*
- mdp ./audio.md
- need to expand file args to absolute paths
-[2019-03-23 08:45:29.633] [info] [ '/Applications/mdp.app/Contents/MacOS/mdp', './audio.md' ]
-[2019-03-23 08:45:30.285] [info] readFile ./audio.md
-[2019-03-23 08:45:30.297] [error] readFile Error: ENOENT: no such file or directory, open './audio.md'
-[2019-03-23 08:45:30.298] [error] readFile no data
-*/
-
-/*
-- check for if exists in readFile, else close window
-first launch accepting open anyway security
-[2019-03-23 08:42:31.939] [info] readFile -psn_0_3715979
-[2019-03-23 08:42:31.952] [error] readFile Error: ENOENT: no such file or directory, open '-psn_0_3715979'
-[2019-03-23 08:42:31.953] [error] readFile no data
-*/
-
-/*
-*/
-
-/* fixme need activate? app.on('activate', () => { if (window === null) { createWindow() } }); */
-
-/* fixme window is destroyed, keep list or?
-in app.on('second-instance', (event, commandLine, workingDirectory)
-if (window) {
-  if (window.isMinimized()) window.restore();
-  window.focus();
-}
-*/
-//
-// fixme - may need to push to array so not collected after multiple win?
-// let window = null;
-
-/* fixme url and slashes window.loadURL(url.format({ pathname: path.join(__dirname, 'view/index.html'), protocol: 'file:', slashes: true })); */

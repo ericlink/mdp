@@ -1,4 +1,4 @@
-<img src="https://electronjs.org/app-img/mdp/mdp-icon-128.png">
+<img src="./assets/app.png" alt="mdp app icon" width="128" height="128">
 
 # mdp
 <b>m</b>ark<b>d</b>own <b>p</b>review for local files using Electron, marked, highlight.js, mermaid, node-emoji, and automatic file watching.

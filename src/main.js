@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, Menu, dialog, ipcMain, shell } = require('electron');
 const { execFile } = require('child_process');
 const fs = require('fs');
 const menu = require('./menu.js');
@@ -15,9 +15,44 @@ const mainLogPath = '/tmp/mdp-main.log';
 const windows = new Set();
 const pendingFilesByWebContentsId = new Map();
 const watchersByWebContentsId = new Map();
+const PRESET_DISPLAY_THEMES = {
+  alabaster: {
+    backgroundColor: '#f8f4ed',
+    foregroundColor: '#181410'
+  },
+  linen: {
+    backgroundColor: '#f0e3d0',
+    foregroundColor: '#23170f'
+  },
+  sage: {
+    backgroundColor: '#e4ede6',
+    foregroundColor: '#18211b'
+  },
+  dusk: {
+    backgroundColor: '#1a2330',
+    foregroundColor: '#e7edf5'
+  },
+  obsidian: {
+    backgroundColor: '#090807',
+    foregroundColor: '#f3ede3'
+  }
+};
+const DEFAULT_DISPLAY_SETTINGS = {
+  theme: 'linen',
+  fontType: 'preset',
+  fontValue: 'sans',
+  backgroundColor: PRESET_DISPLAY_THEMES.linen.backgroundColor,
+  foregroundColor: PRESET_DISPLAY_THEMES.linen.foregroundColor
+};
+const VALID_DISPLAY_THEMES = new Set([...Object.keys(PRESET_DISPLAY_THEMES), 'custom']);
+const VALID_PRESET_FONTS = new Set(['sans', 'serif', 'humanist', 'mono']);
+const VALID_FONT_TYPES = new Set(['preset', 'system']);
+const FONT_FILE_PATTERN = /\.(ttf|ttc|otf|dfont)$/i;
 let settingsCache = null;
 let pendingOpenFilePath = null;
 let lastOpenedFilePath = null;
+let systemFontsPromise = null;
+let isFinishingQuit = false;
 
 try {
   fs.writeFileSync(mainLogPath, '');
@@ -142,6 +177,188 @@ const getStartupFilePath = (argv = []) => {
 
 const getSettingsFilePath = () => {
   return path.join(app.getPath('userData'), 'settings.json');
+};
+
+const normalizeHexColor = (value, fallback) => {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  return /^#[0-9a-f]{6}$/i.test(normalized) ? normalized : fallback;
+};
+
+const normalizeFontValue = (fontType, fontValue) => {
+  if (typeof fontValue !== 'string') {
+    return DEFAULT_DISPLAY_SETTINGS.fontValue;
+  }
+
+  const normalized = fontValue.trim();
+  if (!normalized) {
+    return DEFAULT_DISPLAY_SETTINGS.fontValue;
+  }
+
+  if (fontType === 'preset') {
+    return VALID_PRESET_FONTS.has(normalized) ? normalized : DEFAULT_DISPLAY_SETTINGS.fontValue;
+  }
+
+  return normalized.slice(0, 160);
+};
+
+const normalizeDisplaySettings = (displaySettings = {}) => {
+  const theme = VALID_DISPLAY_THEMES.has(displaySettings.theme)
+    ? displaySettings.theme
+    : DEFAULT_DISPLAY_SETTINGS.theme;
+  const fontType = displaySettings.fontType === 'custom'
+    ? 'system'
+    : VALID_FONT_TYPES.has(displaySettings.fontType)
+      ? displaySettings.fontType
+      : DEFAULT_DISPLAY_SETTINGS.fontType;
+  const fontValue = normalizeFontValue(fontType, displaySettings.fontValue);
+  const presetTheme = PRESET_DISPLAY_THEMES[theme] || PRESET_DISPLAY_THEMES[DEFAULT_DISPLAY_SETTINGS.theme];
+
+  return {
+    theme,
+    fontType,
+    fontValue,
+    backgroundColor: theme === 'custom'
+      ? normalizeHexColor(displaySettings.backgroundColor, DEFAULT_DISPLAY_SETTINGS.backgroundColor)
+      : presetTheme.backgroundColor,
+    foregroundColor: theme === 'custom'
+      ? normalizeHexColor(displaySettings.foregroundColor, DEFAULT_DISPLAY_SETTINGS.foregroundColor)
+      : presetTheme.foregroundColor
+  };
+};
+
+const getDisplaySettings = () => {
+  return normalizeDisplaySettings(loadSettings().displaySettings);
+};
+
+const broadcastDisplaySettings = (displaySettings) => {
+  windows.forEach((window) => {
+    if (window.isDestroyed()) {
+      return;
+    }
+
+    window.webContents.send('mdp:menu-action', {
+      action: 'apply-display-settings',
+      displaySettings
+    });
+  });
+};
+
+const broadcastMenuAction = (action, payload = {}) => {
+  windows.forEach((window) => {
+    if (window.isDestroyed()) {
+      return;
+    }
+
+    window.webContents.send('mdp:menu-action', {
+      action,
+      ...payload
+    });
+  });
+};
+
+const saveDisplaySettings = (partialDisplaySettings = {}) => {
+  const nextDisplaySettings = normalizeDisplaySettings({
+    ...getDisplaySettings(),
+    ...partialDisplaySettings
+  });
+  const nextSettings = saveSettings({
+    displaySettings: nextDisplaySettings
+  });
+  const normalizedDisplaySettings = normalizeDisplaySettings(nextSettings.displaySettings);
+
+  broadcastDisplaySettings(normalizedDisplaySettings);
+
+  return normalizedDisplaySettings;
+};
+
+const getSystemFontDirectories = () => {
+  if (process.platform === 'darwin') {
+    return [
+      '/System/Library/Fonts',
+      '/Library/Fonts',
+      path.join(app.getPath('home'), 'Library', 'Fonts')
+    ];
+  }
+
+  if (process.platform === 'win32') {
+    return [
+      path.join(process.env.WINDIR || 'C:\\Windows', 'Fonts')
+    ];
+  }
+
+  return [
+    '/usr/share/fonts',
+    '/usr/local/share/fonts',
+    path.join(app.getPath('home'), '.fonts'),
+    path.join(app.getPath('home'), '.local', 'share', 'fonts')
+  ];
+};
+
+const deriveFontFamilyName = (fileName) => {
+  return path.basename(fileName, path.extname(fileName))
+    .replace(/[_-]+/g, ' ')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+const walkFontDirectory = async (directoryPath, depth = 0) => {
+  if (depth > 2) {
+    return [];
+  }
+
+  let entries;
+
+  try {
+    entries = await fs.promises.readdir(directoryPath, { withFileTypes: true });
+  } catch (error) {
+    return [];
+  }
+
+  const fontFamilies = [];
+
+  for (const entry of entries) {
+    const entryPath = path.join(directoryPath, entry.name);
+
+    if (entry.isDirectory()) {
+      fontFamilies.push(...await walkFontDirectory(entryPath, depth + 1));
+      continue;
+    }
+
+    if (entry.isFile() && FONT_FILE_PATTERN.test(entry.name)) {
+      const familyName = deriveFontFamilyName(entry.name);
+      if (familyName) {
+        fontFamilies.push(familyName);
+      }
+    }
+  }
+
+  return fontFamilies;
+};
+
+const getSystemFonts = async () => {
+  if (!systemFontsPromise) {
+    systemFontsPromise = (async () => {
+      const familyNames = [];
+
+      for (const directoryPath of getSystemFontDirectories()) {
+        familyNames.push(...await walkFontDirectory(directoryPath));
+      }
+
+      return Array.from(new Set(familyNames))
+        .sort((left, right) => left.localeCompare(right, undefined, { sensitivity: 'base' }));
+    })().catch((error) => {
+      systemFontsPromise = null;
+      throw error;
+    });
+  }
+
+  return systemFontsPromise;
 };
 
 const loadSettings = () => {
@@ -396,6 +613,21 @@ ipcMain.handle('mdp:set-editor-path', (event, editorPath) => {
   return resolvedEditorPath;
 });
 
+ipcMain.handle('mdp:get-display-settings', (event) => {
+  ensureTrustedIpcSender(event);
+  return getDisplaySettings();
+});
+
+ipcMain.handle('mdp:get-system-fonts', async (event) => {
+  ensureTrustedIpcSender(event);
+  return getSystemFonts();
+});
+
+ipcMain.handle('mdp:set-display-settings', (event, displaySettings) => {
+  ensureTrustedIpcSender(event);
+  return saveDisplaySettings(displaySettings);
+});
+
 ipcMain.handle('mdp:launch-editor', async (event, payload) => {
   ensureTrustedIpcSender(event);
   return launchEditor(payload);
@@ -494,6 +726,22 @@ if (!hasSingleInstanceLock) {
     writeMainLog('session-start', new Date().toISOString());
     menu.setupMenu(app);
     openMarkdownFile(pendingOpenFilePath || getStartupFilePath(process.argv));
+  });
+
+  app.on('before-quit', (event) => {
+    if (isFinishingQuit) {
+      Menu.setApplicationMenu(null);
+      return;
+    }
+
+    event.preventDefault();
+    isFinishingQuit = true;
+    broadcastMenuAction('prepare-for-quit');
+
+    setTimeout(() => {
+      Menu.setApplicationMenu(null);
+      app.quit();
+    }, 40);
   });
 
   app.on('activate', () => {

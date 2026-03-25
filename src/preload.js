@@ -99,6 +99,9 @@ contextBridge.exposeInMainWorld('mdp', {
   selectEditor: () => ipcRenderer.invoke('mdp:select-editor'),
   getEditorPath: () => ipcRenderer.invoke('mdp:get-editor-path'),
   setEditorPath: (editorPath) => ipcRenderer.invoke('mdp:set-editor-path', editorPath),
+  getDisplaySettings: () => ipcRenderer.invoke('mdp:get-display-settings'),
+  getSystemFonts: () => ipcRenderer.invoke('mdp:get-system-fonts'),
+  setDisplaySettings: (displaySettings) => ipcRenderer.invoke('mdp:set-display-settings', displaySettings),
   toFileUrl: (filePath) => pathToFileURL(path.resolve(filePath)).toString(),
   launchEditor: (editorPath, filePath) => ipcRenderer.invoke('mdp:launch-editor', {
     editorPath,

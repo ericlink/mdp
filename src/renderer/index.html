@@ -2,12 +2,96 @@
 <html>
   <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' file: data:; img-src 'self' file: data: http: https:; script-src 'self' file:; style-src 'self' 'unsafe-inline' file:; font-src 'self' data: file:; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self';">
     <title>mdp</title>
     <link rel="stylesheet" href="style.css">
   </head>
   <body>
-    <div class="container">
-      <div class="md"></div>
+    <main class="container">
+      <article class="md" aria-live="polite" tabindex="-1"></article>
+    </main>
+
+    <div class="reader-settings-shell" hidden>
+      <div class="reader-settings-dialog" role="dialog" aria-modal="true" aria-labelledby="reader-settings-title">
+        <form class="reader-settings-form">
+        <header class="reader-settings-header">
+          <div>
+            <p class="reader-settings-eyebrow">Display</p>
+            <h1 id="reader-settings-title">Settings</h1>
+          </div>
+        </header>
+
+        <section class="reader-settings-preview" aria-live="polite">
+          <div class="preview-swatch">
+            <p class="preview-label">Live sample</p>
+            <p class="preview-title">Readable Markdown</p>
+            <p class="preview-body">The quick brown fox jumps over the lazy dog. Inline code stays legible, and long-form text keeps stable contrast.</p>
+          </div>
+          <p class="contrast-summary" id="contrast-summary"></p>
+        </section>
+
+        <section class="theme-preset-section" aria-labelledby="theme-preset-heading">
+          <div class="theme-preset-header">
+            <div>
+              <p class="preview-label">Preset Gallery</p>
+              <p class="theme-preset-copy" id="theme-preset-heading">Five tuned palettes for long-form reading.</p>
+            </div>
+          </div>
+          <div class="theme-preset-grid" id="theme-preset-grid" aria-label="Reader themes"></div>
+        </section>
+
+        <section class="reader-settings-grid">
+          <label class="settings-field settings-field-wide" for="theme-select">
+            <span>Theme</span>
+            <select id="theme-select" name="theme"></select>
+          </label>
+
+          <label class="settings-field" for="background-color-input">
+            <span>Background</span>
+            <input id="background-color-input" name="backgroundColor" type="color">
+          </label>
+
+          <label class="settings-field" for="foreground-color-input">
+            <span>Foreground</span>
+            <input id="foreground-color-input" name="foregroundColor" type="color">
+          </label>
+
+          <fieldset class="settings-field settings-field-wide">
+            <span>Font Source</span>
+            <div class="font-source-group">
+              <label class="radio-pill">
+                <input type="radio" name="fontType" value="preset" checked>
+                <span>Preset</span>
+              </label>
+              <label class="radio-pill">
+                <input type="radio" name="fontType" value="system">
+                <span>System</span>
+              </label>
+            </div>
+          </fieldset>
+
+          <label class="settings-field settings-field-wide" for="font-select">
+            <span>Font</span>
+            <select id="font-select" name="fontValue"></select>
+          </label>
+        </section>
+
+        <footer class="reader-settings-actions">
+          <button type="button" class="secondary-button" id="reset-display-settings">
+            Restore Defaults
+          </button>
+          <div class="reader-settings-action-group">
+            <button type="button" class="secondary-button" data-dialog-close>
+              Cancel
+            </button>
+            <button type="submit" class="primary-button" id="save-display-settings">
+              Apply
+            </button>
+          </div>
+        </footer>
+        </form>
+      </div>
     </div>
     <script src="./script.js"></script>
   </body>

@@ -4,7 +4,7 @@
   "license": "Apache-2.0",
   "repository": "https://github.com/ericlink/mdp",
   "productName": "mdp",
-  "description": "mdp",
+  "description": "Markdown preview for local files with code highlighting, Mermaid, and live reload.",
   "author": "elink",
   "main": "./src/main.js",
   "keywords": [
@@ -18,118 +18,38 @@
   ],
   "scripts": {
     "dev-publish": "npm run package && rm -rf /Applications/mdp.app/ && mv ./out/mdp-darwin-x64/mdp.app /Applications/",
-    "dev": "./node_modules/.bin/electron ./src/main.js ./assets/example.md",
-    "log": "tail -f ~/Library/Logs/mdp/log.log",
-    "dev-noarg": "./node_modules/.bin/electron ./src/main.js",
-    "dev-readme": "./node_modules/.bin/electron ./src/main.js ./README.md",
-    "start": "electron-forge start ./assets/example.md",
+    "dev": "MDP_ALLOW_MULTI_INSTANCE=1 MDP_DEFAULT_FILE=./assets/example.md electron-forge start -- ./assets/example.md",
+    "log": "tail -f /tmp/mdp-main.log",
+    "dev-noarg": "MDP_ALLOW_MULTI_INSTANCE=1 electron-forge start",
+    "dev-readme": "MDP_ALLOW_MULTI_INSTANCE=1 MDP_DEFAULT_FILE=./README.md electron-forge start -- ./README.md",
+    "start": "MDP_ALLOW_MULTI_INSTANCE=1 MDP_DEFAULT_FILE=./assets/example.md electron-forge start -- ./assets/example.md",
     "package": "electron-forge package",
+    "package:mac-internal": "MDP_INTERNAL=1 electron-forge package --platform=darwin --arch=arm64",
     "make": "electron-forge make",
+    "make:mac-internal": "MDP_INTERNAL=1 electron-forge make --platform=darwin --arch=arm64",
     "publish": "electron-forge publish",
     "lint": "echo \"No linting configured\"",
-    "apple-validate": "xcrun altool  --verbose --validate-app -f ./out/make/zip/darwin/x64/mdp-darwin-x64-*.zip -t darwin -u eric.m.link@gmail.com --password $APPL_PASS",
-    "apple-upload": "xcrun altool  --verbose --upload-app   -f ./out/make/zip/darwin/x64/mdp-darwin-x64-*.zip -t darwin -u eric.m.link@gmail.com --password $APPL_PASS",
+    "apple-validate": "xcrun altool --verbose --validate-app -f ./out/make/zip/darwin/x64/mdp-darwin-x64-*.zip -t darwin -u eric.m.link@gmail.com --password $APPL_PASS",
+    "apple-upload": "xcrun altool --verbose --upload-app -f ./out/make/zip/darwin/x64/mdp-darwin-x64-*.zip -t darwin -u eric.m.link@gmail.com --password $APPL_PASS",
     "clean": "rm -rf out package"
   },
   "dependencies": {
-    "chokidar": "^3.0.1",
-    "cryptiles": "^4.1.3",
-    "electron-cookies": "*",
-    "electron-log": "^3.0.6",
-    "electron-reload": "^1.4.0",
-    "electron-settings": "^3.2.0",
-    "electron-window-state": "^5.0.2",
-    "highlight.js": "^10.4.1",
-    "hoek": "^6.1.3",
-    "marked": "^0.8.2",
-    "mermaid": "^8.5.0",
-    "node-emoji": "^1.10.0",
-    "tmp": "^0.1.0",
-    "update-electron-app": "^1.4.2",
-    "url": "^0.11.0"
+    "electron-window-state": "^5.0.3",
+    "highlight.js": "^11.11.1",
+    "marked": "^17.0.5",
+    "mermaid": "^11.13.0",
+    "node-emoji": "^2.2.0",
+    "tmp": "^0.2.5"
   },
   "devDependencies": {
-    "@electron-forge/cli": "^6.0.0-beta.50",
-    "@electron-forge/maker-deb": "^6.0.0-beta.50",
-    "@electron-forge/maker-dmg": "^6.0.0-beta.50",
-    "@electron-forge/maker-pkg": "^6.0.0-beta.50",
-    "@electron-forge/maker-rpm": "^6.0.0-beta.50",
-    "@electron-forge/maker-squirrel": "^6.0.0-beta.50",
-    "@electron-forge/maker-zip": "^6.0.0-beta.50",
-    "@electron-forge/publisher-github": "^6.0.0-beta.50",
-    "electron": "^13.1.6",
-    "electron-forge": "^5.2.4",
-    "electron-prebuilt-compile": "^1.3.2"
-  },
-  "config": {
-    "forge": {
-      "packagerConfig": {
-        "icon": "assets/app.icns",
-        "darwinDarkModeSupport": true,
-        "overwrite": true,
-        "extendInfo": "Info.plist",
-        "helperBundleId": "com.electron.mdp",
-        "appBundleId": "com.electron.mdp",
-        "osxSign": {
-          "identity": "Developer ID Application: Eric Link (W8QA48B3XU)",
-          "hardenedRuntime": true,
-          "gatekeeperAssess": false,
-          "entitlements": "entitlements.plist",
-          "entitlements-inherit": "entitlements.plist",
-          "signature-flags": "library"
-        },
-        "osxNotarize": {
-          "appleId": "eric.m.link@gmail.com",
-          "appleIdPassword": "frby-gcjr-eoqh-ygrt"
-        }
-      },
-      "makers": [
-        {
-          "name": "@electron-forge/maker-pkg",
-          "config": {
-            "identity": "3rd Party Mac Developer Installer: Eric Link (W8QA48B3XU)"
-          }
-        },
-        {
-          "name": "@electron-forge/maker-dmg",
-          "config": {
-            "format": "ULFO"
-          }
-        },
-        {
-          "name": "@electron-forge/maker-squirrel"
-        },
-        {
-          "name": "@electron-forge/maker-zip",
-          "platforms": [
-            "darwin"
-          ],
-          "config": {}
-        },
-        {
-          "name": "@electron-forge/maker-deb",
-          "config": {}
-        },
-        {
-          "name": "@electron-forge/maker-rpm",
-          "config": {}
-        }
-      ],
-      "publishers": [
-        {
-          "name": "@electron-forge/publisher-github",
-          "platforms": [
-            "darwin"
-          ],
-          "config": {
-            "repository": {
-              "owner": "ericlink",
-              "name": "mdp"
-            },
-            "prerelease": false
-          }
-        }
-      ]
-    }
+    "@electron-forge/cli": "^7.11.1",
+    "@electron-forge/maker-deb": "^7.11.1",
+    "@electron-forge/maker-dmg": "^7.11.1",
+    "@electron-forge/maker-pkg": "^7.11.1",
+    "@electron-forge/maker-rpm": "^7.11.1",
+    "@electron-forge/maker-squirrel": "^7.11.1",
+    "@electron-forge/maker-zip": "^7.11.1",
+    "@electron-forge/publisher-github": "^7.11.1",
+    "electron": "^41.0.3"
   }
 }

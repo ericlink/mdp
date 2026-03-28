@@ -1,7 +1,30 @@
-const { BrowserWindow, Menu } = require('electron');
+const { BrowserWindow, Menu, dialog, shell } = require('electron');
 
 let applicationMenu = null;
 let cachedApp = null;
+const APP_NAME = 'mdp';
+const PROJECT_URL = 'https://ericlink.github.io/mdp/';
+
+const showAboutDialog = async (app, targetWindow) => {
+  const options = {
+    type: 'info',
+    title: `About ${APP_NAME}`,
+    buttons: ['Open Project Website', 'OK'],
+    defaultId: 1,
+    cancelId: 1,
+    noLink: true,
+    message: APP_NAME,
+    detail: `Version ${app.getVersion()}\n\n${PROJECT_URL}`
+  };
+
+  const result = targetWindow
+    ? await dialog.showMessageBox(targetWindow, options)
+    : await dialog.showMessageBox(options);
+
+  if (result.response === 0) {
+    await shell.openExternal(PROJECT_URL);
+  }
+};
 
 const buildMenu = (app, sendMenuAction, getTargetWindow) => {
   const settingsMenuItem = {
@@ -10,6 +33,12 @@ const buildMenu = (app, sendMenuAction, getTargetWindow) => {
     click: (_menuItem, browserWindow) => {
       sendMenuAction('open-reader-settings', browserWindow);
     }
+  };
+  const fileMenu = {
+    label: 'File',
+    submenu: [
+      { role: 'close' }
+    ]
   };
 
   const actionsMenu = {
@@ -66,25 +95,49 @@ const buildMenu = (app, sendMenuAction, getTargetWindow) => {
     ]
   };
 
-  const settingsMenu = {
-    label: 'Settings',
-    submenu: [
-      settingsMenuItem
-    ]
-  };
+  if (process.platform === 'darwin') {
+    return Menu.buildFromTemplate([
+      {
+        label: APP_NAME,
+        submenu: [
+          {
+            label: `About ${APP_NAME}`,
+            click: (_menuItem, browserWindow) => {
+              const window = getTargetWindow(browserWindow);
+              void showAboutDialog(app, window);
+            }
+          },
+          { type: 'separator' },
+          settingsMenuItem,
+          { type: 'separator' },
+          { role: 'services' },
+          { type: 'separator' },
+          { role: 'hide' },
+          { role: 'hideOthers' },
+          { role: 'unhide' },
+          { type: 'separator' },
+          { role: 'quit' }
+        ]
+      },
+      fileMenu,
+      { role: 'editMenu' },
+      actionsMenu,
+      { role: 'windowMenu' }
+    ]);
+  }
 
-  const template = [
-    settingsMenu,
+  return Menu.buildFromTemplate([
+    {
+      label: 'Settings',
+      submenu: [
+        settingsMenuItem
+      ]
+    },
+    fileMenu,
     { role: 'editMenu' },
     actionsMenu,
     { role: 'windowMenu' }
-  ];
-
-  if (process.platform === 'darwin') {
-    template.unshift({ role: 'appMenu' });
-  }
-
-  return Menu.buildFromTemplate(template);
+  ]);
 };
 
 const refreshApplicationMenu = (app, sendMenuAction, getTargetWindow) => {
@@ -95,6 +148,7 @@ const refreshApplicationMenu = (app, sendMenuAction, getTargetWindow) => {
 
 exports.setupMenu = function(app) {
   cachedApp = app;
+  app.setName(APP_NAME);
 
   const getTargetWindow = (browserWindow) => {
     if (browserWindow && !browserWindow.isDestroyed()) {

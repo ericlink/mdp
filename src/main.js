@@ -7,6 +7,7 @@ const tmp = require('tmp');
 const { fileURLToPath, pathToFileURL } = require('url');
 const windowStateKeeper = require('electron-window-state');
 
+const APP_NAME = 'mdp';
 const appRoot = path.resolve(__dirname, '..');
 const preloadPath = path.join(__dirname, 'preload.js');
 const rendererHtmlPath = path.join(__dirname, 'renderer', 'index.html');
@@ -53,6 +54,8 @@ let pendingOpenFilePath = null;
 let lastOpenedFilePath = null;
 let systemFontsPromise = null;
 let isFinishingQuit = false;
+
+app.setName(APP_NAME);
 
 try {
   fs.writeFileSync(mainLogPath, '');

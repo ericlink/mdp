@@ -16,7 +16,6 @@ Please fork and submit your PR with enough comments for someone who's never seen
 
 forge config now lives in `forge.config.js`
 
-upstream repo is `git clone https://github.com/ericlink/electron-forge-webapp-template.git`
 
 ### package
 1. `npm install`

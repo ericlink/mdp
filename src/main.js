@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, dialog, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
 const { execFile } = require('child_process');
 const fs = require('fs');
 const menu = require('./menu.js');
@@ -13,6 +13,7 @@ const preloadPath = path.join(__dirname, 'preload.js');
 const rendererHtmlPath = path.join(__dirname, 'renderer', 'index.html');
 const rendererUrl = pathToFileURL(rendererHtmlPath);
 const mainLogPath = '/tmp/mdp-main.log';
+const nativeStderrLogPath = '/tmp/mdp-native-stderr.log';
 const windows = new Set();
 const pendingFilesByWebContentsId = new Map();
 const watchersByWebContentsId = new Map();
@@ -56,6 +57,25 @@ let systemFontsPromise = null;
 let isFinishingQuit = false;
 
 app.setName(APP_NAME);
+
+const redirectNativeStderr = () => {
+  if (process.platform !== 'darwin' || process.env.MDP_PASSTHROUGH_STDERR === '1') {
+    return;
+  }
+
+  try {
+    fs.closeSync(2);
+    const redirectedFd = fs.openSync(nativeStderrLogPath, 'a');
+
+    if (redirectedFd !== 2) {
+      fs.closeSync(redirectedFd);
+    }
+  } catch (_error) {
+    // Keep the default stderr stream if redirection is unavailable.
+  }
+};
+
+redirectNativeStderr();
 
 try {
   fs.writeFileSync(mainLogPath, '');
@@ -733,7 +753,6 @@ if (!hasSingleInstanceLock) {
 
   app.on('before-quit', (event) => {
     if (isFinishingQuit) {
-      Menu.setApplicationMenu(null);
       return;
     }
 
@@ -742,7 +761,6 @@ if (!hasSingleInstanceLock) {
     broadcastMenuAction('prepare-for-quit');
 
     setTimeout(() => {
-      Menu.setApplicationMenu(null);
       app.quit();
     }, 40);
   });

@@ -1157,9 +1157,13 @@ const initReaderSettingsDialog = async () => {
     }
   });
 
-  window.addEventListener('keydown', (event) => {
+  readerSettingsShell.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && !readerSettingsShell.hidden) {
       event.preventDefault();
+      event.stopPropagation();
+      if (typeof event.stopImmediatePropagation === 'function') {
+        event.stopImmediatePropagation();
+      }
       closeReaderSettingsDialog();
     }
   });

@@ -12,6 +12,25 @@
       <article class="md" aria-live="polite" tabindex="-1"></article>
     </main>
 
+    <div class="find-shell" hidden>
+      <div class="find-bar" role="search" aria-label="Find in page">
+        <input
+          id="find-input"
+          class="find-input"
+          type="search"
+          placeholder="Find in page"
+          autocomplete="off"
+          spellcheck="false"
+        >
+        <div class="find-controls">
+          <span class="find-status" id="find-status" aria-live="polite">Type to search</span>
+          <button type="button" class="secondary-button find-button" id="find-previous-button">Prev</button>
+          <button type="button" class="secondary-button find-button" id="find-next-button">Next</button>
+          <button type="button" class="secondary-button find-button" id="find-close-button">Done</button>
+        </div>
+      </div>
+    </div>
+
     <div class="reader-settings-shell" hidden>
       <div class="reader-settings-dialog" role="dialog" aria-modal="true" aria-labelledby="reader-settings-title">
         <form class="reader-settings-form">

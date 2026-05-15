@@ -25,6 +25,7 @@
     "start": "MDP_ALLOW_MULTI_INSTANCE=1 MDP_DEFAULT_FILE=./assets/example.md electron-forge start -- ./assets/example.md",
     "package": "electron-forge package",
     "package:mac-internal": "MDP_INTERNAL=1 electron-forge package --platform=darwin --arch=arm64",
+    "local-install": "test -d ./out/mdp-darwin-arm64/mdp.app && rm -rf /Applications/mdp.app && ditto ./out/mdp-darwin-arm64/mdp.app /Applications/mdp.app",
     "make": "electron-forge make",
     "make:mac-internal": "MDP_INTERNAL=1 electron-forge make --platform=darwin --arch=arm64",
     "publish": "electron-forge publish",

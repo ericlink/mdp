@@ -10,6 +10,14 @@ const buildMenu = (app, sendMenuAction, getTargetWindow) => {
       sendMenuAction('open-reader-settings', browserWindow);
     }
   };
+  const findMenuItem = {
+    id: 'find-in-page',
+    label: 'Find in Page...',
+    accelerator: 'CmdOrCtrl+F',
+    click: (_menuItem, browserWindow) => {
+      sendMenuAction('open-find', browserWindow);
+    }
+  };
   const fileMenu = {
     label: 'File',
     submenu: [
@@ -85,10 +93,16 @@ const buildMenu = (app, sendMenuAction, getTargetWindow) => {
       appSubmenu.insert(1, new MenuItem(settingsMenuItem));
     }
 
+    const editSubmenu = applicationMenu.items[2]?.submenu;
+    if (editSubmenu && !editSubmenu.getMenuItemById('find-in-page')) {
+      editSubmenu.append(new MenuItem({ type: 'separator' }));
+      editSubmenu.append(new MenuItem(findMenuItem));
+    }
+
     return applicationMenu;
   }
 
-  return Menu.buildFromTemplate([
+  const applicationMenu = Menu.buildFromTemplate([
     {
       label: 'Settings',
       submenu: [
@@ -100,6 +114,14 @@ const buildMenu = (app, sendMenuAction, getTargetWindow) => {
     actionsMenu,
     { role: 'windowMenu' }
   ]);
+
+  const editSubmenu = applicationMenu.items[2]?.submenu;
+  if (editSubmenu && !editSubmenu.getMenuItemById('find-in-page')) {
+    editSubmenu.append(new MenuItem({ type: 'separator' }));
+    editSubmenu.append(new MenuItem(findMenuItem));
+  }
+
+  return applicationMenu;
 };
 
 exports.setupMenu = function(app) {

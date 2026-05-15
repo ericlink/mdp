@@ -213,6 +213,65 @@ body {
     var(--page-padding-bottom);
 }
 
+.find-shell {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 20;
+}
+
+.find-shell[hidden] {
+  display: none;
+}
+
+.find-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: min(38rem, calc(100vw - 36px));
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(14px);
+}
+
+.find-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 2.65rem;
+  padding: 0.66rem 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel-strong);
+  color: var(--text);
+  font: inherit;
+}
+
+.find-input::placeholder {
+  color: var(--muted);
+}
+
+.find-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.find-status {
+  min-width: 4.9rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.find-button {
+  min-height: 2.45rem;
+  padding-inline: 0.82rem;
+}
+
 .reader-settings-shell {
   position: fixed;
   inset: 0;
@@ -577,6 +636,18 @@ a:focus-visible {
   margin-bottom: 0;
 }
 
+.find-match {
+  padding: 0 0.08em;
+  border-radius: 0.2em;
+  background: color-mix(in srgb, var(--link) 24%, #ffe39a);
+  color: inherit;
+}
+
+.find-match-active {
+  background: color-mix(in srgb, var(--link) 38%, #ffd34d);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--link) 30%, transparent);
+}
+
 h1, h2, h3, h4, h5, h6,
 p,
 blockquote,
@@ -795,6 +866,28 @@ li + li {
     --page-padding-top: 14px;
     --page-padding-bottom: 28px;
     --surface-padding: 18px;
+  }
+
+  .find-shell {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+  }
+
+  .find-bar {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .find-controls {
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .find-status {
+    min-width: 0;
+    text-align: left;
   }
 
   .reader-settings-grid {

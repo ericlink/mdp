@@ -5,6 +5,12 @@ if (!appApi) {
 }
 
 const markdownContainer = document.querySelector('.md');
+const findShell = document.querySelector('.find-shell');
+const findInput = document.querySelector('#find-input');
+const findStatus = document.querySelector('#find-status');
+const findPreviousButton = document.querySelector('#find-previous-button');
+const findNextButton = document.querySelector('#find-next-button');
+const findCloseButton = document.querySelector('#find-close-button');
 const readerSettingsShell = document.querySelector('.reader-settings-shell');
 const readerSettingsDialog = document.querySelector('.reader-settings-dialog');
 const readerSettingsForm = document.querySelector('.reader-settings-form');
@@ -113,7 +119,11 @@ const state = {
   markedConfigured: false,
   mermaidConfigKey: null,
   renderToken: 0,
-  settingsReturnFocusTarget: null
+  settingsReturnFocusTarget: null,
+  findQuery: '',
+  findMatchElements: [],
+  activeFindMatchIndex: -1,
+  findReturnFocusTarget: null
 };
 
 const displayFontMap = new Map(DISPLAY_FONTS.map((font) => [font.value, font]));
@@ -169,6 +179,266 @@ const createStateCard = (title, message, details) => {
 
 const showStateCard = (title, message, details) => {
   markdownContainer.replaceChildren(createStateCard(title, message, details));
+};
+
+const isEditableElement = (element) => {
+  if (!(element instanceof HTMLElement)) {
+    return false;
+  }
+
+  if (element.matches('input, textarea, select')) {
+    return true;
+  }
+
+  return Boolean(element.closest('[contenteditable]:not([contenteditable="false"])'));
+};
+
+const isNodeInsideMarkdown = (node) => {
+  if (!node) {
+    return false;
+  }
+
+  const element = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+  return element instanceof HTMLElement && markdownContainer.contains(element);
+};
+
+const getSelectedMarkdownText = () => {
+  const selection = window.getSelection();
+
+  if (!selection || selection.isCollapsed) {
+    return '';
+  }
+
+  if (!isNodeInsideMarkdown(selection.anchorNode) || !isNodeInsideMarkdown(selection.focusNode)) {
+    return '';
+  }
+
+  return selection.toString().replace(/\s+/g, ' ').trim().slice(0, 160);
+};
+
+const updateFindStatus = () => {
+  const matchCount = state.findMatchElements.length;
+
+  if (!state.findQuery) {
+    findStatus.textContent = 'Type to search';
+  } else if (!matchCount) {
+    findStatus.textContent = 'No matches';
+  } else {
+    findStatus.textContent = `${state.activeFindMatchIndex + 1} of ${matchCount}`;
+  }
+
+  const navigationDisabled = matchCount === 0;
+  findPreviousButton.disabled = navigationDisabled;
+  findNextButton.disabled = navigationDisabled;
+};
+
+const clearFindHighlights = () => {
+  state.findMatchElements.forEach((match) => {
+    if (!match.parentNode) {
+      return;
+    }
+
+    const parent = match.parentNode;
+    parent.replaceChild(document.createTextNode(match.textContent || ''), match);
+    parent.normalize();
+  });
+
+  state.findMatchElements = [];
+  state.activeFindMatchIndex = -1;
+  updateFindStatus();
+};
+
+const setActiveFindMatch = (index, { scrollIntoView = true } = {}) => {
+  state.findMatchElements.forEach((match) => {
+    match.classList.remove('find-match-active');
+  });
+
+  if (!state.findMatchElements.length) {
+    state.activeFindMatchIndex = -1;
+    updateFindStatus();
+    return;
+  }
+
+  const boundedIndex = Math.max(0, Math.min(index, state.findMatchElements.length - 1));
+  const activeMatch = state.findMatchElements[boundedIndex];
+
+  activeMatch.classList.add('find-match-active');
+  state.activeFindMatchIndex = boundedIndex;
+  updateFindStatus();
+
+  if (scrollIntoView) {
+    activeMatch.scrollIntoView({
+      block: 'center',
+      inline: 'nearest',
+      behavior: 'smooth'
+    });
+  }
+};
+
+const collectFindMatches = (query) => {
+  const matches = [];
+  const normalizedQuery = query.toLocaleLowerCase();
+  const textNodes = [];
+  const walker = document.createTreeWalker(markdownContainer, NodeFilter.SHOW_TEXT, {
+    acceptNode: (node) => {
+      if (!node.textContent || !node.textContent.trim()) {
+        return NodeFilter.FILTER_REJECT;
+      }
+
+      const parent = node.parentElement;
+      if (!parent || ['SCRIPT', 'STYLE'].includes(parent.tagName)) {
+        return NodeFilter.FILTER_REJECT;
+      }
+
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+
+  while (walker.nextNode()) {
+    textNodes.push(walker.currentNode);
+  }
+
+  textNodes.forEach((node) => {
+    const text = node.textContent || '';
+    const normalizedText = text.toLocaleLowerCase();
+    let searchStartIndex = 0;
+    let matchIndex = normalizedText.indexOf(normalizedQuery, searchStartIndex);
+
+    if (matchIndex < 0) {
+      return;
+    }
+
+    const fragment = document.createDocumentFragment();
+
+    while (matchIndex >= 0) {
+      const nextMatchIndex = matchIndex + query.length;
+
+      if (matchIndex > searchStartIndex) {
+        fragment.appendChild(document.createTextNode(text.slice(searchStartIndex, matchIndex)));
+      }
+
+      const mark = document.createElement('mark');
+      mark.className = 'find-match';
+      mark.textContent = text.slice(matchIndex, nextMatchIndex);
+      fragment.appendChild(mark);
+      matches.push(mark);
+
+      searchStartIndex = nextMatchIndex;
+      matchIndex = normalizedText.indexOf(normalizedQuery, searchStartIndex);
+    }
+
+    if (searchStartIndex < text.length) {
+      fragment.appendChild(document.createTextNode(text.slice(searchStartIndex)));
+    }
+
+    if (node.parentNode) {
+      node.parentNode.replaceChild(fragment, node);
+    }
+  });
+
+  return matches;
+};
+
+const applyFindQuery = (query, { preferredIndex = 0, scrollIntoView = true } = {}) => {
+  clearFindHighlights();
+  state.findQuery = query;
+
+  if (!query) {
+    findInput.value = '';
+    updateFindStatus();
+    return;
+  }
+
+  state.findMatchElements = collectFindMatches(query);
+
+  if (!state.findMatchElements.length) {
+    updateFindStatus();
+    return;
+  }
+
+  const nextIndex = Math.max(0, Math.min(preferredIndex, state.findMatchElements.length - 1));
+  setActiveFindMatch(nextIndex, { scrollIntoView });
+};
+
+const rerunFindQuery = () => {
+  if (!state.findQuery) {
+    clearFindHighlights();
+    return;
+  }
+
+  const preferredIndex = state.activeFindMatchIndex >= 0 ? state.activeFindMatchIndex : 0;
+  applyFindQuery(state.findQuery, {
+    preferredIndex,
+    scrollIntoView: false
+  });
+};
+
+const jumpToFindMatch = (direction) => {
+  if (!state.findMatchElements.length) {
+    return;
+  }
+
+  const nextIndex = state.activeFindMatchIndex < 0
+    ? (direction >= 0 ? 0 : state.findMatchElements.length - 1)
+    : (state.activeFindMatchIndex + direction + state.findMatchElements.length) % state.findMatchElements.length;
+
+  setActiveFindMatch(nextIndex);
+};
+
+const openFindBar = ({ prefillFromSelection = true } = {}) => {
+  if (!readerSettingsShell.hidden) {
+    return;
+  }
+
+  const selectedText = prefillFromSelection ? getSelectedMarkdownText() : '';
+  const shouldReplaceQuery = Boolean(selectedText) && selectedText !== state.findQuery;
+
+  state.findReturnFocusTarget = document.activeElement instanceof HTMLElement &&
+    !findShell.contains(document.activeElement)
+    ? document.activeElement
+    : null;
+
+  findShell.hidden = false;
+
+  if (shouldReplaceQuery) {
+    findInput.value = selectedText;
+    applyFindQuery(selectedText);
+  } else {
+    findInput.value = state.findQuery;
+    updateFindStatus();
+  }
+
+  window.requestAnimationFrame(() => {
+    findInput.focus();
+    findInput.select();
+  });
+};
+
+const closeFindBar = ({ restoreFocus = true } = {}) => {
+  if (findShell.hidden) {
+    return;
+  }
+
+  if (document.activeElement instanceof HTMLElement && findShell.contains(document.activeElement)) {
+    document.activeElement.blur();
+  }
+
+  findShell.hidden = true;
+
+  const focusTarget = restoreFocus &&
+    state.findReturnFocusTarget &&
+    state.findReturnFocusTarget.isConnected &&
+    typeof state.findReturnFocusTarget.focus === 'function'
+      ? state.findReturnFocusTarget
+      : markdownContainer;
+
+  state.findReturnFocusTarget = null;
+
+  window.requestAnimationFrame(() => {
+    if (typeof focusTarget.focus === 'function') {
+      focusTarget.focus();
+    }
+  });
 };
 
 const getFilePathFromLocation = () => {
@@ -1104,6 +1374,7 @@ const closeReaderSettingsDialog = ({ restoreFocus = true } = {}) => {
 };
 
 const prepareForQuit = () => {
+  closeFindBar({ restoreFocus: false });
   closeReaderSettingsDialog({ restoreFocus: false });
 
   if (document.activeElement instanceof HTMLElement && typeof document.activeElement.blur === 'function') {
@@ -1214,6 +1485,89 @@ const initReaderSettingsDialog = async () => {
   });
 };
 
+const initFindBar = () => {
+  findInput.addEventListener('input', () => {
+    applyFindQuery(findInput.value);
+  });
+
+  findInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      jumpToFindMatch(event.shiftKey ? -1 : 1);
+
+      if (state.findMatchElements.length > 0) {
+        window.requestAnimationFrame(() => {
+          focusReaderSurface();
+        });
+      }
+
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeFindBar();
+    }
+  });
+
+  findPreviousButton.addEventListener('click', () => {
+    jumpToFindMatch(-1);
+  });
+
+  findNextButton.addEventListener('click', () => {
+    jumpToFindMatch(1);
+  });
+
+  findCloseButton.addEventListener('click', () => {
+    closeFindBar();
+  });
+
+  updateFindStatus();
+};
+
+const initKeyboardShortcuts = () => {
+  document.addEventListener('keydown', (event) => {
+    if (event.defaultPrevented) {
+      return;
+    }
+
+    const key = event.key.toLowerCase();
+    const editableTarget = isEditableElement(event.target);
+    const hasPrimaryModifier = event.metaKey || event.ctrlKey;
+
+    if (hasPrimaryModifier && !event.altKey && key === 'f') {
+      event.preventDefault();
+      openFindBar({ prefillFromSelection: true });
+      return;
+    }
+
+    if (!readerSettingsShell.hidden) {
+      return;
+    }
+
+    if (event.key === 'Escape' && !findShell.hidden) {
+      event.preventDefault();
+      closeFindBar();
+      return;
+    }
+
+    if (event.metaKey || event.ctrlKey || event.altKey || editableTarget) {
+      return;
+    }
+
+    if (event.key === '/') {
+      event.preventDefault();
+      openFindBar({ prefillFromSelection: false });
+      return;
+    }
+
+    if (key === 'n' && state.findQuery) {
+      event.preventDefault();
+      jumpToFindMatch(event.shiftKey ? -1 : 1);
+    }
+  });
+};
+
 const buildStandaloneHtml = () => {
   const title = state.currentFile ? `${getFileName(state.currentFile)} · mdp` : 'mdp';
   const baseHref = state.currentFileUrl ? new URL('.', state.currentFileUrl).toString() : window.location.href;
@@ -1261,6 +1615,7 @@ const rerenderCurrentDocument = async () => {
 
   try {
     await renderDocumentContent(state.currentRawContent, renderToken);
+    rerunFindQuery();
   } catch (error) {
     console.error(error);
     showStateCard('Unable to update preview', error.message || 'An unexpected error occurred while applying display settings.', state.currentRawContent || null);
@@ -1277,6 +1632,9 @@ const renderFile = async (filePath, { historyMode = 'replace' } = {}) => {
     state.currentFile = null;
     state.currentFileUrl = null;
     state.currentRawContent = '';
+    state.findMatchElements = [];
+    state.activeFindMatchIndex = -1;
+    updateFindStatus();
     document.title = 'mdp';
     showStateCard('No file selected', 'Launch mdp with a markdown file to preview.');
     return;
@@ -1297,6 +1655,7 @@ const renderFile = async (filePath, { historyMode = 'replace' } = {}) => {
     }
     state.currentRawContent = rawContent;
     await renderDocumentContent(rawContent, renderToken);
+    rerunFindQuery();
   } catch (error) {
     console.error(error);
     showStateCard('Unable to render file', error.message || 'An unexpected error occurred.', rawContent || null);
@@ -1403,6 +1762,11 @@ const handleLinkClick = async (event) => {
 
 const initMenuActions = () => {
   appApi.onMenuAction(async ({ action, displaySettings }) => {
+    if (action === 'open-find') {
+      openFindBar({ prefillFromSelection: true });
+      return;
+    }
+
     if (action === 'edit-file') {
       await editCurrentFile();
       return;
@@ -1477,10 +1841,12 @@ const init = async () => {
   });
 
   await initReaderSettingsDialog();
+  initFindBar();
   applyDisplaySettings(await appApi.getDisplaySettings());
   initMenuActions();
   initFileWatching();
   initHistory();
+  initKeyboardShortcuts();
 
   const filePath = await resolveInitialFilePath();
   await renderFile(filePath, { historyMode: 'replace' });

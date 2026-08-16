@@ -1,6 +1,7 @@
 const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
 const { execFile } = require('child_process');
 const fs = require('fs');
+const os = require('os');
 const menu = require('./menu.js');
 const path = require('path');
 const tmp = require('tmp');
@@ -12,10 +13,11 @@ const appRoot = path.resolve(__dirname, '..');
 const preloadPath = path.join(__dirname, 'preload.js');
 const rendererHtmlPath = path.join(__dirname, 'renderer', 'index.html');
 const rendererUrl = pathToFileURL(rendererHtmlPath);
-const mainLogPath = '/tmp/mdp-main.log';
-const nativeStderrLogPath = '/tmp/mdp-native-stderr.log';
+const mainLogPath = path.join(os.tmpdir(), 'mdp-main.log');
+const nativeStderrLogPath = path.join(os.tmpdir(), 'mdp-native-stderr.log');
 const windows = new Set();
 const pendingFilesByWebContentsId = new Map();
+const filesByWebContentsId = new Map();
 const watchersByWebContentsId = new Map();
 const PRESET_DISPLAY_THEMES = {
   alabaster: {
@@ -57,6 +59,21 @@ let systemFontsPromise = null;
 let isFinishingQuit = false;
 
 app.setName(APP_NAME);
+
+const isWindowsWslInteropPath = (value) => {
+  return /\\\\wsl[.$]/i.test(value) || /wsl\.localhost/i.test(value);
+};
+
+if (process.platform === 'win32') {
+  const launchedFromWslFilesystem = [process.execPath, process.cwd()].some(isWindowsWslInteropPath);
+
+  if (launchedFromWslFilesystem || process.env.MDP_DISABLE_GPU === '1') {
+    app.disableHardwareAcceleration();
+    app.commandLine.appendSwitch('disable-gpu');
+    app.commandLine.appendSwitch('in-process-gpu');
+    app.commandLine.appendSwitch('disable-gpu-sandbox');
+  }
+}
 
 const redirectNativeStderr = () => {
   if (process.platform !== 'darwin' || process.env.MDP_PASSTHROUGH_STDERR === '1') {
@@ -440,11 +457,7 @@ const cleanupFileWatcher = (webContentsId) => {
   watchersByWebContentsId.delete(webContentsId);
 };
 
-const createMainWindow = (fileState) => {
-  if (!fileState) {
-    return null;
-  }
-
+const createMainWindow = (fileState = null) => {
   const mainWindowState = windowStateKeeper({
     defaultWidth: 1000,
     defaultHeight: 800
@@ -471,7 +484,10 @@ const createMainWindow = (fileState) => {
   const webContents = window.webContents;
   const webContentsId = webContents.id;
   windows.add(window);
-  pendingFilesByWebContentsId.set(webContentsId, fileState);
+  if (fileState) {
+    pendingFilesByWebContentsId.set(webContentsId, fileState);
+    filesByWebContentsId.set(webContentsId, fileState.filePath);
+  }
   mainWindowState.manage(window);
 
   window.loadFile(rendererHtmlPath).catch((error) => {
@@ -484,6 +500,7 @@ const createMainWindow = (fileState) => {
   window.on('closed', () => {
     cleanupFileWatcher(webContentsId);
     pendingFilesByWebContentsId.delete(webContentsId);
+    filesByWebContentsId.delete(webContentsId);
     windows.delete(window);
   });
   webContents.on('render-process-gone', (_event, details) => {
@@ -498,7 +515,11 @@ const createMainWindow = (fileState) => {
 
 const openMarkdownFile = (filePath) => {
   if (!filePath) {
-    return null;
+    if (!app.isReady()) {
+      return null;
+    }
+
+    return createMainWindow(null);
   }
 
   const resolvedFilePath = resolveFilePath(filePath);
@@ -510,6 +531,42 @@ const openMarkdownFile = (filePath) => {
 
   lastOpenedFilePath = resolvedFilePath;
   return createMainWindow(normalizeFileState(resolvedFilePath));
+};
+
+const windowHasOpenFile = (window) => {
+  return Boolean(window && !window.isDestroyed() && filesByWebContentsId.get(window.webContents.id));
+};
+
+const promptAndOpenMarkdownFile = async (browserWindow) => {
+  const targetWindow = browserWindow && !browserWindow.isDestroyed()
+    ? browserWindow
+    : BrowserWindow.getFocusedWindow();
+  const result = await dialog.showOpenDialog(targetWindow || undefined, {
+    title: 'Open Markdown',
+    properties: ['openFile'],
+    filters: [
+      { name: 'Markdown', extensions: ['md', 'markdown', 'mdown', 'mkdn', 'mkd', 'mdtxt'] },
+      { name: 'All Files', extensions: ['*'] }
+    ]
+  });
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return null;
+  }
+
+  const filePath = result.filePaths[0];
+
+  if (targetWindow && !windowHasOpenFile(targetWindow)) {
+    lastOpenedFilePath = filePath;
+    filesByWebContentsId.set(targetWindow.webContents.id, filePath);
+    targetWindow.webContents.send('mdp:menu-action', {
+      action: 'open-file',
+      filePath
+    });
+    return targetWindow;
+  }
+
+  return openMarkdownFile(filePath);
 };
 
 const isSafeExternalUrl = (value) => {
@@ -747,7 +804,9 @@ if (!hasSingleInstanceLock) {
 
   app.whenReady().then(() => {
     writeMainLog('session-start', new Date().toISOString());
-    menu.setupMenu(app);
+    menu.setupMenu(app, {
+      openFile: promptAndOpenMarkdownFile
+    });
     openMarkdownFile(pendingOpenFilePath || getStartupFilePath(process.argv));
   });
 

@@ -1761,9 +1761,14 @@ const handleLinkClick = async (event) => {
 };
 
 const initMenuActions = () => {
-  appApi.onMenuAction(async ({ action, displaySettings }) => {
+  appApi.onMenuAction(async ({ action, displaySettings, filePath }) => {
     if (action === 'open-find') {
       openFindBar({ prefillFromSelection: true });
+      return;
+    }
+
+    if (action === 'open-file') {
+      await renderFile(filePath, { historyMode: 'replace' });
       return;
     }
 

@@ -1,7 +1,7 @@
 const { BrowserWindow, Menu, MenuItem } = require('electron');
 const APP_NAME = 'mdp';
 
-const buildMenu = (app, sendMenuAction, getTargetWindow) => {
+const buildMenu = (app, sendMenuAction, getTargetWindow, openFile) => {
   const settingsMenuItem = {
     id: 'open-reader-settings',
     label: 'Settings...',
@@ -21,6 +21,14 @@ const buildMenu = (app, sendMenuAction, getTargetWindow) => {
   const fileMenu = {
     label: 'File',
     submenu: [
+      {
+        id: 'open-file',
+        label: 'Open...',
+        accelerator: 'CmdOrCtrl+O',
+        click: (_menuItem, browserWindow) => {
+          void openFile(browserWindow);
+        }
+      },
       { role: 'close' }
     ]
   };
@@ -124,7 +132,7 @@ const buildMenu = (app, sendMenuAction, getTargetWindow) => {
   return applicationMenu;
 };
 
-exports.setupMenu = function(app) {
+exports.setupMenu = function(app, { openFile } = {}) {
   app.setName(APP_NAME);
 
   const getTargetWindow = (browserWindow) => {
@@ -149,7 +157,7 @@ exports.setupMenu = function(app) {
     });
   };
 
-  const applicationMenu = buildMenu(app, sendMenuAction, getTargetWindow);
+  const applicationMenu = buildMenu(app, sendMenuAction, getTargetWindow, openFile || (async () => {}));
   Menu.setApplicationMenu(applicationMenu);
   return applicationMenu;
 };

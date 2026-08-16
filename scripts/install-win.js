@@ -5,6 +5,7 @@ const {
   isWindowsFilesystemPath,
   toWindowsPath
 } = require('./win-paths');
+const { createWindowsShortcut, getStartMenuShortcutPath } = require('./create-win-shortcut');
 
 const projectRoot = path.resolve(__dirname, '..');
 const outDir = path.join(projectRoot, 'out');
@@ -60,8 +61,21 @@ try {
   process.exit(1);
 }
 
+const exePath = path.join(destDir, 'mdp.exe');
+const shortcutPath = getStartMenuShortcutPath();
+
+try {
+  createWindowsShortcut({
+    exePath,
+    shortcutPath
+  });
+  console.log(`Shortcut: ${toWindowsPath(shortcutPath)}`);
+} catch (error) {
+  console.error(`Shortcut creation failed: ${error.message}`);
+}
+
 console.log(`Installed to ${windowsDest}`);
 console.log('Launch with:');
 console.log('  npm run start:win');
-console.log(`  ${toWindowsPath(path.join(destDir, 'mdp.exe'))}`);
+console.log(`  ${toWindowsPath(exePath)}`);
 console.log('Do not launch the copy under /home — that hits GPU error 18.');

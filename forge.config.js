@@ -56,7 +56,15 @@ const macPackagerConfig = {
 };
 
 const windowsPackagerConfig = {
-  overwrite: true
+  icon: 'assets/app.ico',
+  overwrite: true,
+  win32metadata: {
+    CompanyName: 'elink',
+    FileDescription: 'mdp',
+    InternalName: 'mdp',
+    OriginalFilename: 'mdp.exe',
+    ProductName: 'mdp'
+  }
 };
 
 module.exports = {
@@ -73,7 +81,10 @@ module.exports = {
     },
     ...internalDarwinMakers,
     {
-      name: '@electron-forge/maker-squirrel'
+      name: '@electron-forge/maker-squirrel',
+      config: {
+        setupIcon: 'assets/app.ico'
+      }
     },
     {
       name: '@electron-forge/maker-deb',

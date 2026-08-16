@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, nativeImage, shell } = require('electron');
 const { execFile } = require('child_process');
 const fs = require('fs');
 const os = require('os');
@@ -7,9 +7,21 @@ const path = require('path');
 const tmp = require('tmp');
 const { fileURLToPath, pathToFileURL } = require('url');
 const windowStateKeeper = require('electron-window-state');
+const {
+  WINDOWS_APP_USER_MODEL_ID,
+  createWindowsShortcut,
+  getStartMenuShortcutPath
+} = require('../scripts/create-win-shortcut');
 
 const APP_NAME = 'mdp';
 const appRoot = path.resolve(__dirname, '..');
+const appIconCandidates = process.platform === 'win32'
+  ? ['app-256.png', 'app.ico', 'app.png']
+  : ['app.png'];
+const appIconPath = appIconCandidates
+  .map((fileName) => path.join(appRoot, 'assets', fileName))
+  .find((filePath) => fs.existsSync(filePath)) || path.join(appRoot, 'assets', 'app.png');
+const appIconImage = nativeImage.createFromPath(appIconPath);
 const preloadPath = path.join(__dirname, 'preload.js');
 const rendererHtmlPath = path.join(__dirname, 'renderer', 'index.html');
 const rendererUrl = pathToFileURL(rendererHtmlPath);
@@ -65,6 +77,9 @@ const isWindowsWslInteropPath = (value) => {
 };
 
 if (process.platform === 'win32') {
+  // Packaged Electron apps default to electron.app.<name>, which makes
+  // Windows keep the stock Electron taskbar/shortcut icon.
+  app.setAppUserModelId(WINDOWS_APP_USER_MODEL_ID);
   const launchedFromWslFilesystem = [process.execPath, process.cwd()].some(isWindowsWslInteropPath);
 
   if (launchedFromWslFilesystem || process.env.MDP_DISABLE_GPU === '1') {
@@ -466,6 +481,7 @@ const createMainWindow = (fileState = null) => {
   const window = new BrowserWindow({
     show: false,
     title: 'mdp',
+    icon: appIconImage.isEmpty() ? appIconPath : appIconImage,
     x: mainWindowState.x,
     y: mainWindowState.y,
     width: mainWindowState.width,
@@ -495,6 +511,9 @@ const createMainWindow = (fileState = null) => {
     writeMainLog('loadFile', error);
   });
   window.once('ready-to-show', () => {
+    if (!appIconImage.isEmpty()) {
+      window.setIcon(appIconImage);
+    }
     window.show();
   });
   window.on('closed', () => {
@@ -804,6 +823,16 @@ if (!hasSingleInstanceLock) {
 
   app.whenReady().then(() => {
     writeMainLog('session-start', new Date().toISOString());
+    if (process.platform === 'win32') {
+      try {
+        createWindowsShortcut({
+          exePath: process.execPath,
+          shortcutPath: getStartMenuShortcutPath()
+        });
+      } catch (error) {
+        writeMainLog('create-win-shortcut', error);
+      }
+    }
     menu.setupMenu(app, {
       openFile: promptAndOpenMarkdownFile
     });

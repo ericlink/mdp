@@ -17,14 +17,14 @@
     "live-reload"
   ],
   "scripts": {
-    "dev-publish": "npm run package && rm -rf /Applications/mdp.app/ && mv ./out/mdp-darwin-x64/mdp.app /Applications/",
+    "dev-publish": "npm run package:mac-internal && npm run local-install",
     "dev": "MDP_ALLOW_MULTI_INSTANCE=1 MDP_DEFAULT_FILE=./assets/example.md electron-forge start -- ./assets/example.md",
     "log": "tail -f /tmp/mdp-main.log",
     "dev-noarg": "MDP_ALLOW_MULTI_INSTANCE=1 electron-forge start",
     "dev-readme": "MDP_ALLOW_MULTI_INSTANCE=1 MDP_DEFAULT_FILE=./README.md electron-forge start -- ./README.md",
     "start": "MDP_ALLOW_MULTI_INSTANCE=1 MDP_DEFAULT_FILE=./assets/example.md electron-forge start -- ./assets/example.md",
     "package": "electron-forge package",
-    "package:mac-internal": "MDP_INTERNAL=1 electron-forge package --platform=darwin --arch=arm64",
+    "package:mac-internal": "env -u npm_config_prefix MDP_INTERNAL=1 NODE_VERSION=22 \"$NVM_DIR/nvm-exec\" electron-forge package --platform=darwin --arch=arm64",
     "package:win": "electron-forge package --platform=win32 --arch=x64",
     "local-install": "test -d ./out/mdp-darwin-arm64/mdp.app && rm -rf /Applications/mdp.app && ditto ./out/mdp-darwin-arm64/mdp.app /Applications/mdp.app",
     "local-install:win": "node ./scripts/install-win.js",

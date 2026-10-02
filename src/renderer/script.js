@@ -1048,6 +1048,30 @@ const renderMermaidBlocks = async (root) => {
   }
 };
 
+const DANGEROUS_MARKDOWN_TAGS = ['script', 'iframe', 'object', 'embed', 'style', 'link', 'meta', 'base', 'form'];
+const DANGEROUS_URL_ATTRS = ['href', 'src', 'action', 'formaction', 'xlink:href'];
+
+const sanitizeParsedMarkdownHtml = (html) => {
+  const template = document.createElement('template');
+  template.innerHTML = html;
+
+  DANGEROUS_MARKDOWN_TAGS.forEach((tag) => {
+    template.content.querySelectorAll(tag).forEach((node) => node.remove());
+  });
+
+  template.content.querySelectorAll('*').forEach((node) => {
+    Array.from(node.attributes).forEach((attr) => {
+      const name = attr.name.toLowerCase();
+      const value = attr.value.trim().toLowerCase();
+      if (name.startsWith('on') || (DANGEROUS_URL_ATTRS.includes(name) && /^\s*(javascript|data|vbscript):/i.test(value))) {
+        node.removeAttribute(attr.name);
+      }
+    });
+  });
+
+  return template.innerHTML;
+};
+
 const parseMarkdown = async (content) => {
   const markedApi = await resolveMarkedApi();
 
@@ -1056,11 +1080,11 @@ const parseMarkdown = async (content) => {
   }
 
   if (typeof markedApi.parse === 'function') {
-    return markedApi.parse(content);
+    return sanitizeParsedMarkdownHtml(markedApi.parse(content));
   }
 
   if (typeof markedApi === 'function') {
-    return markedApi(content);
+    return sanitizeParsedMarkdownHtml(markedApi(content));
   }
 
   return null;

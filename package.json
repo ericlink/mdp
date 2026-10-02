@@ -26,12 +26,16 @@
     "package": "electron-forge package",
     "package:mac-internal": "env -u npm_config_prefix MDP_INTERNAL=1 NODE_VERSION=22 \"$NVM_DIR/nvm-exec\" electron-forge package --platform=darwin --arch=arm64",
     "package:win": "electron-forge package --platform=win32 --arch=x64",
+    "package:linux": "electron-forge package --platform=linux --arch=x64",
     "local-install": "test -d ./out/mdp-darwin-arm64/mdp.app && rm -rf /Applications/mdp.app && ditto ./out/mdp-darwin-arm64/mdp.app /Applications/mdp.app",
     "local-install:win": "node ./scripts/install-win.js",
+    "local-install:linux": "node ./scripts/install-linux.js",
     "start:win": "node ./scripts/start-win.js",
+    "start:linux": "node ./scripts/start-linux.js",
     "make": "electron-forge make",
     "make:mac-internal": "MDP_INTERNAL=1 electron-forge make --platform=darwin --arch=arm64",
     "make:win": "electron-forge make --platform=win32 --arch=x64",
+    "make:linux": "electron-forge make --platform=linux --arch=x64",
     "publish": "electron-forge publish",
     "lint": "echo \"No linting configured\"",
     "apple-validate": "xcrun altool --verbose --validate-app -f ./out/make/zip/darwin/x64/mdp-darwin-x64-*.zip -t darwin -u eric.m.link@gmail.com --password $APPL_PASS",
@@ -67,7 +71,8 @@
     "fast-uri": "^3.1.7",
     "ip-address": "^10.5.0",
     "dompurify": "^3.4.13",
-    "brace-expansion": ">=1.1.18 <2 || >=2.1.4"
+    "brace-expansion": ">=1.1.18 <2 || >=2.1.4",
+    "extract-zip": "file:tools/extract-zip"
   },
   "allowScripts": {
     "electron": true,

@@ -1,0 +1,8 @@
+{
+  "name": "extract-zip",
+  "version": "2.0.1",
+  "private": true,
+  "description": "extract-zip stand-in that shells out to unzip or tar. The published 2.0.1 package hangs on Node 26 after the first zip entry.",
+  "main": "index.js",
+  "license": "Apache-2.0"
+}

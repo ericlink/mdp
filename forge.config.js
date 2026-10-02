@@ -1,4 +1,22 @@
+const fs = require('fs');
+const path = require('path');
+
 const isInternalBuild = process.env.MDP_INTERNAL === '1';
+
+const hasCommand = (name) => {
+  return (process.env.PATH || '').split(path.delimiter).some((dir) => {
+    if (!dir) {
+      return false;
+    }
+
+    try {
+      fs.accessSync(path.join(dir, name), fs.constants.X_OK);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  });
+};
 
 const getArgValue = (name) => {
   const prefix = `--${name}=`;
@@ -15,8 +33,15 @@ const getArgValue = (name) => {
   return null;
 };
 
-const isWindowsBuild = getArgValue('platform') === 'win32'
-  || ['package:win', 'make:win', 'local-install:win'].includes(process.env.npm_lifecycle_event);
+const requestedPlatform = getArgValue('platform');
+const lifecycleEvent = process.env.npm_lifecycle_event || '';
+const isWindowsBuild = requestedPlatform === 'win32'
+  || ['package:win', 'make:win', 'local-install:win'].includes(lifecycleEvent);
+const isLinuxBuild = !isWindowsBuild && (
+  requestedPlatform === 'linux'
+  || ['package:linux', 'make:linux', 'local-install:linux'].includes(lifecycleEvent)
+  || (!requestedPlatform && process.platform === 'linux' && !lifecycleEvent.includes('mac'))
+);
 
 const internalDarwinMakers = [
   {
@@ -27,7 +52,7 @@ const internalDarwinMakers = [
   },
   {
     name: '@electron-forge/maker-zip',
-    platforms: ['darwin'],
+    platforms: ['darwin', 'linux'],
     config: {}
   }
 ];
@@ -67,8 +92,48 @@ const windowsPackagerConfig = {
   }
 };
 
+const linuxPackagerConfig = {
+  icon: 'assets/app-256.png',
+  overwrite: true,
+  executableName: 'mdp'
+};
+
+// deb and rpm makers shell out to distro tools. Skip them when those tools
+// are not installed so `npm run make` still produces a zip on Arch.
+const linuxPackageMakers = [
+  ...(hasCommand('dpkg') && hasCommand('fakeroot') ? [{
+    name: '@electron-forge/maker-deb',
+    config: {
+      options: {
+        maintainer: 'elink',
+        homepage: 'https://github.com/ericlink/mdp',
+        icon: 'assets/app-256.png',
+        categories: ['Office', 'Viewer'],
+        mimeType: ['text/markdown', 'text/x-markdown']
+      }
+    }
+  }] : []),
+  ...(hasCommand('rpmbuild') ? [{
+    name: '@electron-forge/maker-rpm',
+    config: {
+      options: {
+        homepage: 'https://github.com/ericlink/mdp',
+        icon: 'assets/app-256.png',
+        categories: ['Office', 'Viewer'],
+        mimeType: ['text/markdown', 'text/x-markdown']
+      }
+    }
+  }] : [])
+];
+
+const packagerConfig = isWindowsBuild
+  ? windowsPackagerConfig
+  : isLinuxBuild
+    ? linuxPackagerConfig
+    : macPackagerConfig;
+
 module.exports = {
-  packagerConfig: isWindowsBuild ? windowsPackagerConfig : macPackagerConfig,
+  packagerConfig,
   rebuildConfig: {
     onlyModules: []
   },
@@ -86,14 +151,7 @@ module.exports = {
         setupIcon: 'assets/app.ico'
       }
     },
-    {
-      name: '@electron-forge/maker-deb',
-      config: {}
-    },
-    {
-      name: '@electron-forge/maker-rpm',
-      config: {}
-    }
+    ...linuxPackageMakers
   ],
   publishers: isInternalBuild ? [] : [
     {

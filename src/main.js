@@ -1,3 +1,7 @@
+if (process.platform === 'linux' && !process.env.ELECTRON_OZONE_PLATFORM_HINT) {
+  process.env.ELECTRON_OZONE_PLATFORM_HINT = 'auto';
+}
+
 const { app, BrowserWindow, dialog, ipcMain, nativeImage, shell } = require('electron');
 const { execFile } = require('child_process');
 const fs = require('fs');
@@ -17,7 +21,9 @@ const APP_NAME = 'mdp';
 const appRoot = path.resolve(__dirname, '..');
 const appIconCandidates = process.platform === 'win32'
   ? ['app-256.png', 'app.ico', 'app.png']
-  : ['app.png'];
+  : process.platform === 'linux'
+    ? ['app-256.png', 'app.png']
+    : ['app.png'];
 const appIconPath = appIconCandidates
   .map((fileName) => path.join(appRoot, 'assets', fileName))
   .find((filePath) => fs.existsSync(filePath)) || path.join(appRoot, 'assets', 'app.png');
@@ -75,6 +81,11 @@ app.setName(APP_NAME);
 const isWindowsWslInteropPath = (value) => {
   return /\\\\wsl[.$]/i.test(value) || /wsl\.localhost/i.test(value);
 };
+
+if (process.platform === 'linux') {
+  app.commandLine.appendSwitch('ozone-platform-hint', 'auto');
+  app.commandLine.appendSwitch('enable-features', 'WaylandWindowDecorations');
+}
 
 if (process.platform === 'win32') {
   // Packaged Electron apps default to electron.app.<name>, which makes
@@ -191,7 +202,15 @@ const resolveStartupFileArg = (candidate) => {
     return null;
   }
 
-  const resolvedFilePath = resolveFilePath(candidate);
+  let filePath = candidate;
+  if (filePath.startsWith('file:')) {
+    filePath = resolveFileUrlPath(filePath);
+    if (!filePath) {
+      return null;
+    }
+  }
+
+  const resolvedFilePath = resolveFilePath(filePath);
 
   if (resolvedFilePath === path.resolve(__filename)) {
     return null;

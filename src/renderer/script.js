@@ -773,8 +773,26 @@ const isMarkdownFile = (filePath) => {
   return markdownFilePattern.test(filePath || '');
 };
 
+// URL parsers ignore ASCII whitespace, so a tab or newline inside the scheme
+// is still javascript:.
+const SCHEME_CHECK_WHITESPACE = /[\t\n\v\f\r ]+/g;
+const UNSAFE_URL_ATTRIBUTES = new Set(['href', 'src', 'action', 'formaction', 'xlink:href']);
+
+const urlHasScheme = (value, schemes) => {
+  if (!value || typeof value !== 'string') {
+    return false;
+  }
+
+  const normalized = value.replace(SCHEME_CHECK_WHITESPACE, '').toLowerCase();
+  return schemes.some((scheme) => normalized.startsWith(`${scheme}:`));
+};
+
 const isUnsafeUrl = (value) => {
-  return /^javascript:/i.test(value) || /^vbscript:/i.test(value);
+  return urlHasScheme(value, ['javascript', 'vbscript']);
+};
+
+const isDisallowedLinkHref = (value) => {
+  return isUnsafeUrl(value) || urlHasScheme(value, ['data']);
 };
 
 const resolveMarkdownHref = (value) => {
@@ -804,12 +822,12 @@ const sanitizeRenderedContent = (root) => {
         return;
       }
 
-      if ((name === 'href' || name === 'src') && isUnsafeUrl(value)) {
+      if (UNSAFE_URL_ATTRIBUTES.has(name) && isUnsafeUrl(value)) {
         element.removeAttribute(attribute.name);
         return;
       }
 
-      if (name === 'href' && /^data:/i.test(value)) {
+      if (name === 'href' && urlHasScheme(value, ['data'])) {
         element.removeAttribute(attribute.name);
       }
     });
@@ -820,11 +838,21 @@ const rewriteRelativeResources = (root) => {
   root.querySelectorAll('a[href]').forEach((link) => {
     const href = link.getAttribute('href');
 
-    if (!href || href.startsWith('#') || isUnsafeUrl(href)) {
+    if (!href || href.startsWith('#')) {
+      return;
+    }
+
+    if (isDisallowedLinkHref(href)) {
+      link.removeAttribute('href');
       return;
     }
 
     const resolvedHref = resolveMarkdownHref(href);
+    if (isDisallowedLinkHref(resolvedHref)) {
+      link.removeAttribute('href');
+      return;
+    }
+
     link.setAttribute('href', resolvedHref);
 
     if (/^(https?:|mailto:)/i.test(resolvedHref)) {
@@ -835,11 +863,22 @@ const rewriteRelativeResources = (root) => {
   root.querySelectorAll('img[src], source[src]').forEach((element) => {
     const src = element.getAttribute('src');
 
-    if (!src || isUnsafeUrl(src)) {
+    if (!src) {
       return;
     }
 
-    element.setAttribute('src', resolveMarkdownHref(src));
+    if (isUnsafeUrl(src)) {
+      element.removeAttribute('src');
+      return;
+    }
+
+    const resolvedSrc = resolveMarkdownHref(src);
+    if (isUnsafeUrl(resolvedSrc)) {
+      element.removeAttribute('src');
+      return;
+    }
+
+    element.setAttribute('src', resolvedSrc);
   });
 };
 
@@ -1729,11 +1768,21 @@ const handleLinkClick = async (event) => {
     return;
   }
 
+  if (isDisallowedLinkHref(href)) {
+    event.preventDefault();
+    return;
+  }
+
   let resolvedUrl;
 
   try {
     resolvedUrl = new URL(href, getBaseFileUrl());
   } catch (error) {
+    return;
+  }
+
+  if (isDisallowedLinkHref(resolvedUrl.href)) {
+    event.preventDefault();
     return;
   }
 

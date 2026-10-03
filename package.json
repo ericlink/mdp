@@ -59,7 +59,7 @@
     "@electron-forge/maker-squirrel": "^7.11.2",
     "@electron-forge/maker-zip": "^7.11.2",
     "@electron-forge/publisher-github": "^7.11.2",
-    "electron": "^41.10.5"
+    "electron": "^41.10.6"
   },
   "overrides": {
     "tar": "^7.4.3",
@@ -70,7 +70,7 @@
     "electron-installer-dmg": "5.0.1",
     "fast-uri": "^3.1.7",
     "ip-address": "^10.5.0",
-    "dompurify": "^3.4.13",
+    "dompurify": "^3.4.16",
     "brace-expansion": ">=1.1.18 <2 || >=2.1.4",
     "extract-zip": "file:tools/extract-zip"
   },
